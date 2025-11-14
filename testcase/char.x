@@ -1,0 +1,27 @@
+
+# tac list
+
+0x5b43d11344f0	label main
+0x5b43d1134530	begin
+0x5b43d11337f0	var a
+0x5b43d11338a0	var b
+0x5b43d1133950	var c
+0x5b43d1133a00	var d
+0x5b43d1133a60	input d
+0x5b43d1133b60	c = 99
+0x5b43d1133c60	b = 98
+0x5b43d1133cc0	input a
+0x5b43d1133f40	ifz 0 goto L2
+0x5b43d1133e30	output L1
+0x5b43d1133f00	label L2
+0x5b43d1133fa0	output a
+0x5b43d1134000	output b
+0x5b43d1134060	output c
+0x5b43d11340c0	output d
+0x5b43d1134120	output L1
+0x5b43d1134300	var t0
+0x5b43d1134340	t0 = a + 1
+0x5b43d1134380	a = t0
+0x5b43d11343e0	output a
+0x5b43d1134440	output L1
+0x5b43d1134570	end

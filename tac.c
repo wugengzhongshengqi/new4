@@ -9,14 +9,16 @@
 int scope, next_tmp, next_label;
 SYM *sym_tab_global, *sym_tab_local;
 TAC *tac_first, *tac_last;
+int decl_dtype;
 
 void tac_init()
 {
-	scope=0;
-	sym_tab_global=NULL;
-	sym_tab_local=NULL;	
-	next_tmp=0;
-	next_label=1;
+    scope=0;
+    sym_tab_global=NULL;
+    sym_tab_local=NULL;
+    next_tmp=0;
+    next_label=1;
+    decl_dtype=DT_INT;
 }
 
 void tac_complete()
@@ -62,7 +64,7 @@ SYM *mk_sym(void)
 
 SYM *mk_var(char *name)
 {
-	SYM *sym=NULL;
+    SYM *sym=NULL;
 
 	if(scope)  
 		sym=lookup_sym(sym_tab_local,name);
@@ -77,10 +79,11 @@ SYM *mk_var(char *name)
 	}
 
 	/* var unseen before, set up a new symbol table node, insert_sym it into the symbol table. */
-	sym=mk_sym();
-	sym->type=SYM_VAR;
-	sym->name=name;
-	sym->offset=-1; /* Unset address */
+    sym=mk_sym();
+    sym->type=SYM_VAR;
+    sym->name=name;
+    sym->offset=-1; /* Unset address */
+    sym->dtype=decl_dtype;
 
 	if(scope)  
 		insert_sym(&sym_tab_local,sym);
@@ -166,7 +169,7 @@ SYM *mk_tmp(void)
 
 TAC *declare_para(char *name)
 {
-	return mk_tac(TAC_FORMAL,mk_var(name),NULL,NULL);
+    return mk_tac(TAC_FORMAL,mk_var(name),NULL,NULL);
 }
 
 SYM *declare_func(char *name)

@@ -8,6 +8,7 @@
 %%
 
 "int"  {  return INT;  }
+"char" {  return CHAR; }
 
 "input"  {  return INPUT;  }
 
@@ -27,13 +28,31 @@
 }
 
 [0-9]*	{
-	yylval.string = strdup(yytext); 
-	return INTEGER;
+    yylval.string = strdup(yytext); 
+    return INTEGER;
 }
 
 \"[^\"]*\"  {
-	yylval.string = strdup(yytext); 
-	return TEXT;
+    yylval.string = strdup(yytext); 
+    return TEXT;
+}
+
+\'(\\.|[^'])\'  {
+    char ch;
+    if(yytext[1]=='\\') {
+        switch(yytext[2]){
+            case 'n': ch='\n'; break;
+            case '\\': ch='\\'; break;
+            case '\'': ch='\''; break;
+            case '"': ch='"'; break;
+            case 't': ch='\t'; break;
+            default: ch=yytext[2]; break;
+        }
+    } else {
+        ch=yytext[1];
+    }
+    yylval.character = ch;
+    return CHARACTER;
 }
 
 "=="  {  return EQ;  }

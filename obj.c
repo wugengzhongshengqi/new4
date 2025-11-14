@@ -397,26 +397,34 @@ void asm_code(TAC *c)
 		rdesc_fill(r, c->a, MODIFIED);
 		return;
 
-		case TAC_INPUT:
-		r=reg_alloc(c->a);
-		out_str(file_s, "	ITI\n");
-		out_str(file_s, "	LOD R%u,R15\n", r);
-		rdesc[r].mod = MODIFIED;
-		return;
+        case TAC_INPUT:
+        r=reg_alloc(c->a);
+        if(c->a->dtype==DT_CHAR){
+            out_str(file_s, "	ITC\n");
+        } else {
+            out_str(file_s, "	ITI\n");
+        }
+        out_str(file_s, "	LOD R%u,R15\n", r);
+        rdesc[r].mod = MODIFIED;
+        return;
 
-		case TAC_OUTPUT:
-		if(c->a->type == SYM_VAR)
-		{
-			r=reg_alloc(c->a);
-			out_str(file_s, "	LOD R15,R%u\n", r);
-			out_str(file_s, "	OTI\n");
-		} else if(c->a->type == SYM_TEXT)
-		{
-			r=reg_alloc(c->a);
-			out_str(file_s, "	LOD R15,R%u\n", r);
-			out_str(file_s, "	OTS\n");
-		}
-		return;
+        case TAC_OUTPUT:
+        if(c->a->type == SYM_VAR)
+        {
+            r=reg_alloc(c->a);
+            out_str(file_s, "	LOD R15,R%u\n", r);
+            if(c->a->dtype==DT_CHAR){
+                out_str(file_s, "	OTC\n");
+            } else {
+                out_str(file_s, "	OTI\n");
+            }
+        } else if(c->a->type == SYM_TEXT)
+        {
+            r=reg_alloc(c->a);
+            out_str(file_s, "	LOD R15,R%u\n", r);
+            out_str(file_s, "	OTS\n");
+        }
+        return;
 
 		case TAC_GOTO:
 		asm_cond("JMP", NULL, c->a->name);
@@ -507,5 +515,5 @@ void tac_obj()
 	}
 	asm_tail();
 	asm_static();
-} 
+}
 

@@ -18,8 +18,9 @@ void yyerror(char* msg);
 	EXP	*exp;
 }
 
-%token INT EQ NE LT LE GT GE UMINUS IF ELSE WHILE FUNC INPUT OUTPUT RETURN
+%token INT CHAR EQ NE LT LE GT GE UMINUS IF ELSE WHILE FUNC INPUT OUTPUT RETURN
 %token <string> INTEGER IDENTIFIER TEXT
+%token <character> CHARACTER
 
 %left EQ NE LT LE GT GE
 %left '+' '-'
@@ -50,9 +51,13 @@ function_declaration : function
 | declaration
 ;
 
-declaration : INT variable_list ';'
+declaration : INT { decl_dtype=DT_INT; } variable_list ';'
 {
-	$$=$2;
+    $$=$3;
+}
+| CHAR { decl_dtype=DT_CHAR; } variable_list ';'
+{
+    $$=$3;
 }
 ;
 
@@ -195,7 +200,11 @@ expression : expression '+' expression
 }               
 | INTEGER
 {
-	$$=mk_exp(NULL, mk_const(atoi($1)), NULL);
+    $$=mk_exp(NULL, mk_const(atoi($1)), NULL);
+}
+| CHARACTER
+{
+    $$=mk_exp(NULL, mk_const((int)$1), NULL);
 }
 | IDENTIFIER
 {

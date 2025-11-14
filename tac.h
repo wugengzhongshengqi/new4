@@ -6,6 +6,10 @@
 #define SYM_INT 4
 #define SYM_LABEL 5
 
+/* data type */
+#define DT_INT 0
+#define DT_CHAR 1
+
 /* type of tac */ 
 #define TAC_UNDEF 0 /* undefine */
 #define TAC_ADD 1 /* a=b+c */
@@ -43,15 +47,16 @@ typedef struct sym
 		type:SYM_FUNC name:max address:1234		
 		type:SYM_TEXT name:"hello" label:10
 	*/
-	int type;
-	int scope; /* 0:global, 1:local */
-	char *name;
-	int offset;
-	int value;
-	int label;
-	struct tac *address; /* SYM_FUNC */	
-	struct sym *next;
-	void *etc;
+    int type;
+    int scope; /* 0:global, 1:local */
+    int dtype;
+    char *name;
+    int offset;
+    int value;
+    int label;
+    struct tac *address; /* SYM_FUNC */ 
+    struct sym *next;
+    void *etc;
 } SYM;
 
 typedef struct tac
@@ -78,6 +83,7 @@ extern FILE *file_x, *file_s;
 extern int yylineno, scope, next_tmp, next_label;
 extern SYM *sym_tab_global, *sym_tab_local;
 extern TAC *tac_first, *tac_last;
+extern int decl_dtype;
 
 /* function */
 void tac_init();
