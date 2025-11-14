@@ -620,32 +620,108 @@ void out_tac(FILE *f, TAC *i)
 		fprintf(f, "input %s", to_str(i->a, sa));
 		break;
 
-		case TAC_OUTPUT:
-		fprintf(f, "output %s", to_str(i->a, sa));
-		break;
+        case TAC_OUTPUT:
+        fprintf(f, "output %s", to_str(i->a, sa));
+        break;
 
-		case TAC_RETURN:
-		fprintf(f, "return %s", to_str(i->a, sa));
-		break;
+        case TAC_RETURN:
+        fprintf(f, "return %s", to_str(i->a, sa));
+        break;
 
-		case TAC_LABEL:
-		fprintf(f, "label %s", i->a->name);
-		break;
+        case TAC_LABEL:
+        fprintf(f, "label %s", i->a->name);
+        break;
 
-		case TAC_VAR:
-		fprintf(f, "var %s", to_str(i->a, sa));
-		break;
+        case TAC_VAR:
+        fprintf(f, "var %s", to_str(i->a, sa));
+        break;
 
-		case TAC_BEGINFUNC:
-		fprintf(f, "begin");
-		break;
+        case TAC_BEGINFUNC:
+        fprintf(f, "begin");
+        break;
 
-		case TAC_ENDFUNC:
-		fprintf(f, "end");
-		break;
+        case TAC_ENDFUNC:
+        fprintf(f, "end");
+        break;
+        case TAC_ADDR:
+        fprintf(f, "%s = &%s", to_str(i->a, sa), to_str(i->b, sb));
+        break;
+        case TAC_DEREF_R:
+        fprintf(f, "%s = *%s", to_str(i->a, sa), to_str(i->b, sb));
+        break;
+        case TAC_DEREF_W:
+        fprintf(f, "*%s = %s", to_str(i->a, sa), to_str(i->b, sb));
+        break;
 
 		default:
 		error("unknown TAC opcode");
 		break;
 	}
+}
+TAC *declare_ptr_var(char *name)
+{
+    SYM *sym=NULL;
+
+    if(scope)
+        sym=lookup_sym(sym_tab_local,name);
+    else
+        sym=lookup_sym(sym_tab_global,name);
+
+    if(sym!=NULL)
+    {
+        error("variable already declared");
+        return NULL;
+    }
+
+    sym=mk_sym();
+    sym->type=SYM_VAR;
+    sym->name=name;
+    sym->offset=-1;
+    sym->dtype=(decl_dtype==DT_CHAR)?DT_PTR_CHAR:DT_PTR_INT;
+
+    if(scope)
+        insert_sym(&sym_tab_local,sym);
+    else
+        insert_sym(&sym_tab_global,sym);
+
+    return mk_tac(TAC_VAR,sym,NULL,NULL);
+}
+
+EXP *do_addr(SYM *var)
+{
+    TAC *temp;
+    TAC *ret;
+
+    temp=mk_tac(TAC_VAR, mk_tmp(), NULL, NULL);
+    temp->prev=NULL;
+    /* set dtype of temp to pointer type based on var */
+    if(var->dtype==DT_CHAR) temp->a->dtype=DT_PTR_CHAR; else temp->a->dtype=DT_PTR_INT;
+    ret=mk_tac(TAC_ADDR, temp->a, var, NULL);
+    ret->prev=temp;
+
+    return mk_exp(NULL, temp->a, ret);
+}
+
+EXP *do_deref_read(EXP *ptr)
+{
+    TAC *temp;
+    TAC *ret;
+
+    temp=mk_tac(TAC_VAR, mk_tmp(), NULL, NULL);
+    temp->prev=ptr->tac;
+    /* set dtype of temp to base type based on pointer dtype */
+    if(ptr->ret->dtype==DT_PTR_CHAR) temp->a->dtype=DT_CHAR; else temp->a->dtype=DT_INT;
+    ret=mk_tac(TAC_DEREF_R, temp->a, ptr->ret, NULL);
+    ret->prev=temp;
+
+    ptr->ret=temp->a;
+    ptr->tac=ret;
+    return ptr;
+}
+
+TAC *do_deref_write(SYM *ptr, EXP *val)
+{
+    TAC *code=mk_tac(TAC_DEREF_W, ptr, val->ret, NULL);
+    code->prev=val->tac;
+    return code;
 }

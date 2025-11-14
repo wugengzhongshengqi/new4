@@ -1,0 +1,35 @@
+
+# tac list
+
+0x614b9830e8b0	label main
+0x614b9830e8f0	begin
+0x614b9830d7f0	var a
+0x614b9830d8a0	var pa
+0x614b9830d950	var b
+0x614b9830da00	var i
+0x614b9830dab0	var pi
+0x614b9830db60	var j
+0x614b9830dbc0	input a
+0x614b9830dc20	input i
+0x614b9830dec0	ifz 0 goto L2
+0x614b9830dd90	output L1
+0x614b9830de80	label L2
+0x614b9830df90	var t0
+0x614b9830dfd0	t0 = &a
+0x614b9830e040	pa = t0
+0x614b9830e130	var t1
+0x614b9830e170	t1 = &i
+0x614b9830e1e0	pi = t1
+0x614b9830e300	var t2
+0x614b9830e340	t2 = *pa
+0x614b9830e380	b = t2
+0x614b9830e4a0	var t3
+0x614b9830e4e0	t3 = *pi
+0x614b9830e520	j = t3
+0x614b9830e6e0	ifz 0 goto L3
+0x614b9830e5d0	output L1
+0x614b9830e6a0	label L3
+0x614b9830e740	output b
+0x614b9830e7a0	output j
+0x614b9830e800	output L1
+0x614b9830e930	end

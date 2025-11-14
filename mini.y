@@ -18,7 +18,7 @@ void yyerror(char* msg);
 	EXP	*exp;
 }
 
-%token INT CHAR EQ NE LT LE GT GE UMINUS IF ELSE WHILE FUNC INPUT OUTPUT RETURN
+%token INT CHAR EQ NE LT LE GT GE UMINUS UADDR UDEREF IF ELSE WHILE FUNC INPUT OUTPUT RETURN
 %token <string> INTEGER IDENTIFIER TEXT
 %token <character> CHARACTER
 
@@ -26,6 +26,7 @@ void yyerror(char* msg);
 %left '+' '-'
 %left '*' '/'
 %right UMINUS
+%right UADDR UDEREF
 
 %type <tac> program function_declaration_list function_declaration function parameter_list variable_list statement assignment_statement return_statement if_statement while_statement call_statement block declaration_list declaration statement_list input_statement output_statement
 %type <exp> argument_list expression_list expression call_expression
@@ -63,12 +64,20 @@ declaration : INT { decl_dtype=DT_INT; } variable_list ';'
 
 variable_list : IDENTIFIER
 {
-	$$=declare_var($1);
+    $$=declare_var($1);
 }               
 | variable_list ',' IDENTIFIER
 {
-	$$=join_tac($1, declare_var($3));
+    $$=join_tac($1, declare_var($3));
 }               
+| '*' IDENTIFIER
+{
+    $$=declare_ptr_var($2);
+}
+| variable_list ',' '*' IDENTIFIER
+{
+    $$=join_tac($1, declare_ptr_var($4));
+}
 ;
 
 function : function_head '(' parameter_list ')' block
@@ -146,7 +155,11 @@ statement_list : statement
 
 assignment_statement : IDENTIFIER '=' expression
 {
-	$$=do_assign(get_var($1), $3);
+    $$=do_assign(get_var($1), $3);
+}
+| '*' IDENTIFIER '=' expression
+{
+    $$=do_deref_write(get_var($2), $4);
 }
 ;
 
@@ -206,9 +219,17 @@ expression : expression '+' expression
 {
     $$=mk_exp(NULL, mk_const((int)$1), NULL);
 }
+| '&' IDENTIFIER %prec UADDR
+{
+    $$=do_addr(get_var($2));
+}
+| '*' expression %prec UDEREF
+{
+    $$=do_deref_read($2);
+}
 | IDENTIFIER
 {
-	$$=mk_exp(NULL, get_var($1), NULL);
+    $$=mk_exp(NULL, get_var($1), NULL);
 }
 | call_expression
 {

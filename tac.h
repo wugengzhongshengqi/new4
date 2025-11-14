@@ -9,6 +9,8 @@
 /* data type */
 #define DT_INT 0
 #define DT_CHAR 1
+#define DT_PTR_INT 2
+#define DT_PTR_CHAR 3
 
 /* type of tac */ 
 #define TAC_UNDEF 0 /* undefine */
@@ -36,6 +38,9 @@
 #define TAC_RETURN 22 /* return a */
 #define TAC_INPUT 23 /* input a */
 #define TAC_OUTPUT 24 /* output a */
+#define TAC_ADDR 25   /* a = &b */
+#define TAC_DEREF_R 26 /* a = *b */
+#define TAC_DEREF_W 27 /* *a = b */
 
 typedef struct sym
 {
@@ -115,4 +120,8 @@ EXP *do_bin( int binop, EXP *exp1, EXP *exp2);
 EXP *do_cmp( int binop, EXP *exp1, EXP *exp2);
 EXP *do_un( int unop, EXP *exp);
 EXP *do_call_ret(char *name, EXP *arglist);
+TAC *declare_ptr_var(char *name);
+EXP *do_addr(SYM *var);
+EXP *do_deref_read(EXP *ptr);
+TAC *do_deref_write(SYM *ptr, EXP *val);
 void error(const char *format, ...);

@@ -488,6 +488,52 @@ void asm_code(TAC *c)
 		scope=0;
 		return;
 
+		case TAC_ADDR:
+		{
+			int r = reg_alloc(c->a);
+			/* compute address of symbol c->b */
+			if(c->b->type==SYM_VAR)
+			{
+				if(c->b->scope==1)
+				{
+					out_str(file_s, "\tLOD R%u,R%u\n", r, R_BP);
+					if((c->b->offset)>=0) out_str(file_s, "\tADD R%u,%d\n", r, c->b->offset);
+					else out_str(file_s, "\tADD R%u,%d\n", r, -(c->b->offset));
+				}
+				else
+				{
+					out_str(file_s, "\tLOD R%u,STATIC\n", r);
+					out_str(file_s, "\tADD R%u,%d\n", r, c->b->offset);
+				}
+			}
+			rdesc_fill(r, c->a, MODIFIED);
+			return;
+		}
+
+		case TAC_DEREF_R:
+		{
+			int rp = reg_alloc(c->b);
+			int rd = reg_alloc(c->a);
+			/* choose byte or word load by pointer dtype */
+			if(c->b->dtype==DT_PTR_CHAR)
+				out_str(file_s, "\tLDC R%u,(R%u)\n", rd, rp);
+			else
+				out_str(file_s, "\tLOD R%u,(R%u)\n", rd, rp);
+			rdesc_fill(rd, c->a, MODIFIED);
+			return;
+		}
+
+		case TAC_DEREF_W:
+		{
+			int rp = reg_alloc(c->a);
+			int rv = reg_alloc(c->b);
+			if(c->a->dtype==DT_PTR_CHAR)
+				out_str(file_s, "\tSTC (R%u),R%u\n", rp, rv);
+			else
+				out_str(file_s, "\tSTO (R%u),R%u\n", rp, rv);
+			return;
+		}
+
 		default:
 		/* Don't know what this one is */
 		error("unknown TAC opcode to translate");
