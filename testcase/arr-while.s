@@ -192,6 +192,11 @@ L5:
 	LOD R15,R11
 	OTI
 
+	# output L3
+	LOD R12,L3
+	LOD R15,R12
+	OTS
+
 	# goto L5
 	JMP L5
 

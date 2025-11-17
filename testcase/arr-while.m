@@ -20,6 +20,7 @@ main()
         j = j - 1;
         i = arr1[j];
         output i;
+        output "\n";
     }
     
     output "\n";

@@ -15,7 +15,7 @@ main:
 
 	# var k
 
-	# var zs[
+	# var zs /* struct student */
 
 	# input i
 	LOD R5,(R2+8)

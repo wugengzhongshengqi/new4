@@ -426,6 +426,10 @@ expression : expression '+' expression
 {
     $$=do_addr(get_var($2));
 }
+| '&' field_access %prec UADDR
+{
+    $$=do_field_addr($2.chain);
+}
 | '*' expression %prec UDEREF
 {
     $$=do_deref_read($2);

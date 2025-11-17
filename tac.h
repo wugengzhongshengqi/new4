@@ -246,6 +246,7 @@ FIELD_ACCESS *append_array_access(FIELD_ACCESS *chain, EXP *indices);
 /* 字段读写 */
 EXP *do_field_read(FIELD_ACCESS *chain);
 TAC *do_field_write(FIELD_ACCESS *chain, EXP *val);
+EXP *do_field_addr(FIELD_ACCESS *chain);  /* ✅ 新增：字段取址 */
 /* ========== ✅ 新增：辅助函数 ========== */
 /* 判断符号类型 */
 int is_array(SYM *s);

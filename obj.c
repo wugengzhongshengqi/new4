@@ -511,19 +511,15 @@ void asm_code(TAC *c)
 				STRUCT_META *meta = (STRUCT_META *)(c->a->etc);
 				size = meta->size;
 			}
-			else if(c->a->etc != NULL)
+			else if(c->a->dtype == DT_ARRAY && c->a->etc != NULL)
 			{
 				/* 数组元数据结构定义（与 tac.c 中一致） */
-				typedef struct {
-					int dims[16];
-					int ndims;
-					int strides[16];
-					int elem_size;
-					int total_elems;
-				} ARR_META;
+				// fprintf(stderr, "GETIN\n");
 
 				ARR_META *meta = (ARR_META *)(c->a->etc);
 				size = meta->total_elems * meta->elem_size;
+
+				// fprintf(stderr, "%d %d\n", meta->total_elems, meta->elem_size);
 			}
 
 			/* 分配空间 */
