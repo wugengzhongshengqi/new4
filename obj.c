@@ -1,3 +1,8 @@
+/*
+ * 对象代码生成器
+ * 将三地址码(TAC)翻译为目标机指令文本，维护寄存器分配、
+ * 栈帧布局以及调用约定（参数传递、返回、跳转/条件）。
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,19 +11,21 @@
 #include "tac.h"
 #include "obj.h"
 
-/* global var */
+/* 全局状态（生成阶段） */
 int tos; /* top of static */
 int tof; /* top of frame */
 int oof; /* offset of formal */
 int oon; /* offset of next frame */
 struct rdesc rdesc[R_NUM];
 
+/* 清空寄存器描述符 */
 void rdesc_clear(int r)    
 {
 	rdesc[r].var = NULL;
 	rdesc[r].mod = 0;
 }
 
+/* 填充寄存器描述符，确保同一符号不会同时绑定于多寄存器 */
 void rdesc_fill(int r, SYM *s, int mod)
 {
 	int old;
@@ -34,6 +41,7 @@ void rdesc_fill(int r, SYM *s, int mod)
 	rdesc[r].mod=mod;
 }     
 
+/* 若寄存器中的变量已修改，则回写至其内存位置 */
 void asm_write_back(int r)
 {
 	if((rdesc[r].var!=NULL) && rdesc[r].mod)
@@ -51,6 +59,7 @@ void asm_write_back(int r)
 	}
 }
 
+/* 将符号 s 的值加载到寄存器 r，可能来自常量、局部、全局或文本地址 */
 void asm_load(int r, SYM *s) 
 {
 	/* already in a reg */
@@ -95,74 +104,94 @@ void asm_load(int r, SYM *s)
 	// rdesc_fill(r, s, UNMODIFIED);
 }   
 
-int reg_alloc(SYM *s)
+/* 分配寄存器，exclude 指定不可使用的寄存器 */
+int reg_alloc_exclude(SYM *s, int exclude)
 {
-	int r; 
+    int r; 
 
-	/* already in a register */
-	for(r=R_GEN; r < R_NUM; r++)
-	{
-		if(rdesc[r].var==s)
+    /* 1. 已在寄存器中 */
+    for(r=R_GEN; r < R_NUM; r++)
+    {
+        if(rdesc[r].var==s)
 		{
 			if(rdesc[r].mod) asm_write_back(r);
 			return r;
 		}
-	}
+    }
 
-	/* empty register */
-	for(r=R_GEN; r < R_NUM; r++)
-	{
-		if(rdesc[r].var==NULL)
-		{
-			asm_load(r, s);
-			rdesc_fill(r, s, UNMODIFIED);
-			return r;
-		}
+    /* 2. 空寄存器（排除指定寄存器） */
+    for(r=R_GEN; r < R_NUM; r++)
+    {
+        if(r != exclude && rdesc[r].var==NULL)
+        {
+            asm_load(r, s);
+            rdesc_fill(r, s, UNMODIFIED);
+            return r;
+        }
+    }
+    
+    /* 3. UNMODIFIED 且非临时变量（排除指定寄存器） */
+    for(r=R_GEN; r < R_NUM; r++)
+    {
+        if(r != exclude && !rdesc[r].mod)
+        {
+            asm_load(r, s);
+            rdesc_fill(r, s, UNMODIFIED);
+            return r;
+        }
+    }
 
-	}
-	
-	/* unmodifed register */
-	for(r=R_GEN; r < R_NUM; r++)
-	{
-		if(!rdesc[r].mod)
-		{
-			asm_load(r, s);
-			rdesc_fill(r, s, UNMODIFIED);
-			return r;
-		}
-	}
+    /* 4. MODIFIED 变量（排除指定寄存器） */
+    for(r=R_GEN; r < R_NUM; r++)
+    {
+        if(r != exclude && rdesc[r].var->type == SYM_VAR)
+        {
+            asm_write_back(r);
+            asm_load(r, s);
+            rdesc_fill(r, s, UNMODIFIED);
+            return r;
+        }
+    }
 
-	/* random register */
-	srand(time(NULL));
-	int random = (rand() % (R_NUM - R_GEN)) + R_GEN; 
-	asm_write_back(random);
-	asm_load(random, s);
-	rdesc_fill(random, s, UNMODIFIED);
-	return random;
+    /* 5. 寄存器溢出 */
+    error("Register spill");
+    return R_GEN;
 }
 
+/* 原函数包装 */
+int reg_alloc(SYM *s)
+{
+    return reg_alloc_exclude(s, -1);  // -1 表示无排除
+}
+
+/* 生成二元算术指令，结果绑定到 a 所在寄存器并标记为修改 */
 void asm_bin(char *op, SYM *a, SYM *b, SYM *c)
 {
-	int reg_b=-1, reg_c=-1; 
-
-	while(reg_b == reg_c)
-	{
-		reg_b = reg_alloc(b); 
-		reg_c = reg_alloc(c); 
+	int reg_b, reg_c; 
+    reg_b = reg_alloc(b); 
+    
+    // 如果 b 和 c 是同一个符号，直接使用同一个寄存器
+    if (b == c) {
+        reg_c = reg_b;
+    } else {
+		reg_c = reg_alloc_exclude(c, reg_b); 
 	}
 	
 	out_str(file_s, "	%s R%u,R%u\n", op, reg_b, reg_c);
 	rdesc_fill(reg_b, a, MODIFIED);
 }   
 
+/* 关系比较：通过 SUB+TST，再依据标志寄存器合成 0/1 到目标寄存器 */
 void asm_cmp(int op, SYM *a, SYM *b, SYM *c)
 {
-	int reg_b=-1, reg_c=-1; 
-
-	while(reg_b == reg_c)
-	{
-		reg_b = reg_alloc(b); 
-		reg_c = reg_alloc(c); 
+	int reg_b, reg_c; 
+	
+	reg_b = reg_alloc(b); 
+	// 如果 b 和 c 是同一个符号，直接使用同一个寄存器
+    if (b == c) {
+        reg_c = reg_b;
+    } else {
+		reg_c = reg_alloc_exclude(c,reg_b); 
 	}
 
 	out_str(file_s, "	SUB R%u,R%u\n", reg_b, reg_c);
@@ -230,6 +259,7 @@ void asm_cmp(int op, SYM *a, SYM *b, SYM *c)
 	rdesc_fill(reg_b, a, MODIFIED);
 }   
 
+/* 条件/无条件跳转：必要时测试寄存器，再输出跳转伪指令 */
 void asm_cond(char *op, SYM *a,  char *l)
 {
 	for(int r=R_GEN; r < R_NUM; r++) asm_write_back(r);
@@ -250,6 +280,7 @@ void asm_cond(char *op, SYM *a,  char *l)
 	out_str(file_s, "	%s %s\n", op, l); 
 } 
 
+/* 函数调用：保存旧 BP 与返回地址，切换帧，跳转；处理返回值寄存器 */
 void asm_call(SYM *a, SYM *b)
 {
 	int r;
@@ -271,6 +302,7 @@ void asm_call(SYM *a, SYM *b)
 	oon=0;
 }
 
+/* 函数返回：可选返回值装载，恢复 BP 并跳转至返回地址 */
 void asm_return(SYM *a)
 {
 	for(int r=R_GEN; r < R_NUM; r++) asm_write_back(r);
@@ -286,6 +318,7 @@ void asm_return(SYM *a)
 	out_str(file_s, "	JMP R3\n");			/* return */
 }   
 
+/* 输出程序头：初始化栈与默认返回地址 */
 void asm_head()
 {
 	char head[]=
@@ -298,6 +331,7 @@ void asm_head()
 	out_str(file_s, "%s", head);
 }
 
+/* 输出程序尾与 EXIT 标签 */
 void asm_tail()
 {
 	char tail[]=
@@ -308,6 +342,7 @@ void asm_tail()
 	out_str(file_s, "%s", tail);
 }
 
+/* 输出字符串常量数据区，处理转义字符并以 0 结尾 */
 void asm_str(SYM *s)
 {
 	char *t=s->name; /* The text */
@@ -337,6 +372,7 @@ void asm_str(SYM *s)
 	out_str(file_s, "0\n"); /* End of string */
 }
 
+/* 输出静态区与栈入口，先输出所有字符串常量标签 */
 void asm_static(void)
 {
 	int i;
@@ -353,6 +389,7 @@ void asm_static(void)
 	out_str(file_s, "STACK:\n");
 }
 
+/* 翻译一条 TAC 到目标指令 */
 void asm_code(TAC *c)
 {
 	int r;
@@ -465,19 +502,41 @@ void asm_code(TAC *c)
 		return;
 
 		case TAC_VAR:
-		if(scope)
 		{
-			c->a->scope=1; /* local var */
-			c->a->offset=tof;
-			tof +=4;
+			int size = 4; /* 默认大小：普通变量或指针 */
+
+			/* 检查是否为数组 */
+			if(c->a->etc != NULL)
+			{
+				/* 数组元数据结构定义（与 tac.c 中一致） */
+				typedef struct {
+					int dims[16];
+					int ndims;
+					int strides[16];
+					int elem_size;
+					int total_elems;
+				} ARR_META;
+
+				ARR_META *meta = (ARR_META *)(c->a->etc);
+				size = meta->total_elems * meta->elem_size;
+			}
+
+			/* 分配空间 */
+			if(scope)
+			{
+				c->a->scope = 1; /* 局部变量 */
+				c->a->offset = tof;
+				tof += size;
+			}
+			else
+			{
+				c->a->scope = 0; /* 全局变量 */
+				c->a->offset = tos;
+				tos += size;
+			}
+			return;
 		}
-		else
-		{
-			c->a->scope=0; /* global var */
-			c->a->offset=tos;
-			tos +=4;
-		}
-		return;
+
 
 		case TAC_RETURN:
 		asm_return(c->a);
@@ -513,7 +572,7 @@ void asm_code(TAC *c)
 		case TAC_DEREF_R:
 		{
 			int rp = reg_alloc(c->b);
-			int rd = reg_alloc(c->a);
+			int rd = reg_alloc_exclude(c->a, rp);
 			/* choose byte or word load by pointer dtype */
 			if(c->b->dtype==DT_PTR_CHAR)
 				out_str(file_s, "\tLDC R%u,(R%u)\n", rd, rp);
@@ -526,7 +585,7 @@ void asm_code(TAC *c)
 		case TAC_DEREF_W:
 		{
 			int rp = reg_alloc(c->a);
-			int rv = reg_alloc(c->b);
+			int rv = reg_alloc_exclude(c->b, rp);
 			if(c->a->dtype==DT_PTR_CHAR)
 				out_str(file_s, "\tSTC (R%u),R%u\n", rp, rv);
 			else
@@ -541,6 +600,7 @@ void asm_code(TAC *c)
 	}
 }
 
+/* 主入口：遍历 TAC 链表，边注释边生成目标代码，最后输出尾与静态区 */
 void tac_obj()
 {
 	tof=LOCAL_OFF; /* TOS allows space for link info */

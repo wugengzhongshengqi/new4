@@ -1,4 +1,5 @@
 %{
+/* 词法分析器（Flex）：识别关键字、标识符、字面量与操作符并返回 token */
 #include "tac.h"
 #include "mini.y.h"
 %}
@@ -73,6 +74,7 @@
 
 %%
 
+/* 输入结束回调 */
 int yywrap()
 {
 	return 1;
