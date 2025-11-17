@@ -37,6 +37,7 @@ void yyerror(char* msg);
 /* 终结符与关键字 */
 %token INT CHAR STRUCT DOT EQ NE LT LE GT GE UMINUS UADDR UDEREF IF ELSE WHILE FUNC INPUT OUTPUT RETURN
 %token SWITCH CASE DEFAULT BREAK
+%token FOR CONTINUE
 %token <string> INTEGER IDENTIFIER TEXT
 %token <character> CHARACTER
 
@@ -66,6 +67,8 @@ void yyerror(char* msg);
 %type <case_list> case_list
 %type <case_list> case_clause
 %type <tac> default_opt
+%type <tac> for_statement for_init for_iter
+%type <exp> for_cond
 
 %%
 
@@ -294,10 +297,15 @@ statement : assignment_statement ';'
 | return_statement ';'
 | if_statement
 | while_statement
+| for_statement
 | switch_statement 
 | BREAK ';'
 {
 	$$ = do_break();
+}
+| CONTINUE ';'
+{
+	$$ = do_continue();
 }
 | block
 | error
@@ -535,10 +543,17 @@ if_statement : IF '(' expression ')' block
 
 /* 循环：while */
 /* while_statement：循环结构，以标签和 GOTO 回到循环首 */
-while_statement : WHILE '(' expression ')' block
+while_statement : WHILE '(' expression ')' 
 {
-	$$=do_while($3, $5);
-}               
+    /* 中间动作：在解析 block 之前设置循环上下文 */
+    enter_loop_context();
+}
+block
+{
+    /* 生成 TAC 并退出上下文 */
+    $$ = do_while($3, $6);
+    exit_loop_context();
+}
 ;
 
 /* 无返回值调用 */
@@ -623,6 +638,57 @@ default_opt : /* empty */
 }
 ;
 
+/* for 语句 */
+for_statement : FOR '(' for_init ';' for_cond ';' for_iter ')' 
+{
+    /* 中间动作：在解析 block 之前设置循环上下文 */
+    enter_loop_context();
+}
+block
+{
+    /* 生成 TAC 并退出上下文 */
+    $$ = do_for($3, $5, $7, $10);
+    exit_loop_context();
+}
+;
+/* 可选的初始化 */
+for_init : /* empty */
+{
+    $$ = NULL;
+}
+| IDENTIFIER '=' expression
+{
+    $$ = do_assign(get_var($1), $3);
+}
+| expression
+{
+    $$ = $1->tac;
+}
+;
+/* 可选的条件 */
+for_cond : /* empty */
+{
+    $$ = NULL;
+}
+| expression
+{
+    $$ = $1;
+}
+;
+/* 可选的迭代 */
+for_iter : /* empty */
+{
+    $$ = NULL;
+}
+| IDENTIFIER '=' expression
+{
+    $$ = do_assign(get_var($1), $3);
+}
+| expression
+{
+    $$ = $1->tac;
+}
+;
 
 
 %%

@@ -25,6 +25,21 @@ SYM *sym_tab_global, *sym_tab_local;
 TAC *tac_first, *tac_last;
 int decl_dtype;
 static SYM *current_switch_end = NULL;
+static LOOP_CTX *loop_stack = NULL;
+static BREAK_CTX *break_stack = NULL;
+
+typedef struct loop_parse_ctx {
+    SYM *begin_label;
+    SYM *continue_label;
+    SYM *end_label;
+    struct loop_parse_ctx *prev;
+} LOOP_PARSE_CTX;
+static LOOP_PARSE_CTX *loop_parse_stack = NULL;
+
+static LOOP_PARSE_CTX *get_current_loop_labels(void)
+{
+    return loop_parse_stack;
+}
 
 /* 初始化 TAC 构造所需的全局变量 */
 void tac_init()
@@ -479,18 +494,6 @@ TAC *do_test(EXP *exp, TAC *stmt1, TAC *stmt2)
     return label2;
 }
 
-/* while (exp) stmt ：先创建循环入口 label，再利用 if+goto 实现循环 */
-TAC *do_while(EXP *exp, TAC *stmt) 
-{
-    TAC *label=mk_tac(TAC_LABEL, mk_label(mk_lstr(next_label++)), NULL, NULL);
-    TAC *code=mk_tac(TAC_GOTO, label->a, NULL, NULL);
-
-    /* Lbegin: ifz ret goto Lend; stmt; goto Lbegin; Lend: */
-    code->prev=stmt; /* 语句后接回到循环首的 goto */
-
-    return join_tac(label, do_if(exp, code));
-}
-
 /* 在当前作用域及全局查找变量名称并进行类型校验 */
 SYM *get_var(char *name)
 {
@@ -594,6 +597,11 @@ char *to_str(SYM *s, char *str)
 		/* Convert the number to string */
 		sprintf(str, "%d", s->value);
 		return str;
+
+        case SYM_LABEL:
+        /* Put the label */
+        sprintf(str, "L%d", s->label);
+        return str;
 
 		default:
 		/* Unknown arg type */
@@ -2467,114 +2475,10 @@ SYM *enter_switch(void)
     new_frame->end_label = end_label;
     new_frame->prev = switch_stack;
     switch_stack = new_frame;
+
+     enter_break_context(end_label);
     
     return end_label;
-}
-
-/**
- * 退出 switch：生成 TAC 并出栈
- * @param sel 选择表达式
- * @param cases case 列表
- * @param default_block default 代码块
- * @param end_label 预分配的结束标签（由 enter_switch 返回）
- * @return 完整的 switch TAC
- */
-TAC *exit_switch(EXP *sel, CASE_NODE *cases, TAC *default_block, SYM *end_label)
-{
-    TAC *code = NULL;
-    
-    /* 1. 检查栈状态 */
-    if (!switch_stack) {
-        error("exit_switch: switch stack underflow");
-        return NULL;
-    }
-    
-    /* 2. 验证标签一致性 */
-    if (switch_stack->end_label != end_label) {
-        error("exit_switch: label mismatch");
-    }
-    
-    /* 3. 生成选择表达式的 TAC */
-    code = sel->tac;
-    
-    /* 4. 检查重复的 case 值 */
-    for (CASE_NODE *c1 = cases; c1; c1 = c1->next) {
-        for (CASE_NODE *c2 = c1->next; c2; c2 = c2->next) {
-            if (c1->value == c2->value) {
-                error("duplicate case value: %d", c1->value);
-            }
-        }
-    }
-    
-    /* 5. 为每个 case 生成比较和跳转 */
-    CASE_NODE *c = cases;
-    while (c) {
-        /* 5.1 比较：t = (sel == case_value) */
-        SYM *tmp = mk_tmp();
-        TAC *var_tac = mk_tac(TAC_VAR, tmp, NULL, NULL);
-        var_tac->prev = code;
-        code = var_tac;
-        
-        TAC *cmp_tac = mk_tac(TAC_EQ, tmp, sel->ret, mk_const(c->value));
-        cmp_tac->prev = code;
-        code = cmp_tac;
-        
-        /* 5.2 生成下一个 case 的标签 */
-        SYM *next_label_sym = mk_label(mk_lstr(next_label++));
-        
-        /* 5.3 ifz t goto next_label */
-        TAC *ifz_tac = mk_tac(TAC_IFZ, next_label_sym, tmp, NULL);
-        ifz_tac->prev = code;
-        code = ifz_tac;
-        
-        /* 5.4 case 体代码 */
-        if (c->code) {
-            code = join_tac(code, c->code);
-        }
-        
-        /* 5.5 goto end_label（自动 break，避免 fallthrough） */
-        TAC *goto_end = mk_tac(TAC_GOTO, end_label, NULL, NULL);
-        goto_end->prev = code;
-        code = goto_end;
-        
-        /* 5.6 next_label: */
-        TAC *next_lab = mk_tac(TAC_LABEL, next_label_sym, NULL, NULL);
-        next_lab->prev = code;
-        code = next_lab;
-        
-        c = c->next;
-    }
-    
-    /* 6. default 分支（如果有） */
-    if (default_block) {
-        code = join_tac(code, default_block);
-    }
-    
-    /* 7. end_label: */
-    TAC *end_lab = mk_tac(TAC_LABEL, end_label, NULL, NULL);
-    end_lab->prev = code;
-    code = end_lab;
-    
-    /* 8. 出栈 */
-    SWITCH_STACK *old_frame = switch_stack;
-    switch_stack = switch_stack->prev;
-    free(old_frame);
-    
-    return code;
-}
-
-/**
- * break 语句：生成跳转到当前 switch 结束标签的 GOTO
- * @return TAC_GOTO 指令
- */
-TAC *do_break(void)
-{
-    if (!switch_stack) {
-        error("break statement not within switch");
-        return NULL;
-    }
-    
-    return mk_tac(TAC_GOTO, switch_stack->end_label, NULL, NULL);
 }
 
 /**
@@ -2610,4 +2514,279 @@ CASE_NODE *append_case(CASE_NODE *list, CASE_NODE *new_case)
     tail->next = new_case;
     
     return list;
+}
+
+/* 进入循环 */
+void enter_loop(SYM *begin_label, SYM *continue_label, SYM *end_label)
+{
+    LOOP_CTX *ctx = malloc(sizeof(LOOP_CTX));
+    ctx->begin_label = begin_label;
+    ctx->continue_label = continue_label;
+    ctx->end_label = end_label;
+    ctx->prev = loop_stack;
+    loop_stack = ctx;
+}
+/* 退出循环 */
+void exit_loop(void)
+{
+    if (!loop_stack) {
+        error("Internal: loop context underflow");
+        return;
+    }
+    LOOP_CTX *old = loop_stack;
+    loop_stack = old->prev;
+    free(old);
+}
+/* 进入 break 上下文 */
+void enter_break_context(SYM *end_label)
+{
+    BREAK_CTX *ctx = malloc(sizeof(BREAK_CTX));
+    ctx->end_label = end_label;
+    ctx->prev = break_stack;
+    break_stack = ctx;
+}
+/* 退出 break 上下文 */
+void exit_break_context(void)
+{
+    if (!break_stack) {
+        error("Internal: break context underflow");
+        return;
+    }
+    BREAK_CTX *old = break_stack;
+    break_stack = old->prev;
+    free(old);
+}
+/**
+ * 生成 for 循环的 TAC（使用语法分析阶段预分配的标签）
+ */
+TAC *do_for(TAC *init, EXP *cond, TAC *iter, TAC *body)
+{
+    /* 1. 从解析栈获取标签 */
+    LOOP_PARSE_CTX *ctx = get_current_loop_labels();
+    if (!ctx) {
+        error("Internal: for loop context not found");
+        return NULL;
+    }
+    
+    SYM *Lbegin = ctx->begin_label;
+    SYM *Lcont = ctx->continue_label;
+    SYM *Lend = ctx->end_label;
+    
+    /* 2. 生成 TAC（不再设置上下文,因为已经设置过了） */
+    TAC *code = init;
+    
+    /* Lbegin: */
+    code = join_tac(code, mk_tac(TAC_LABEL, Lbegin, NULL, NULL));
+    
+    /* 条件判断 */
+    if (cond) {
+        code = join_tac(code, cond->tac);
+        code = join_tac(code, mk_tac(TAC_IFZ, Lend, cond->ret, NULL));
+    }
+    
+    /* 循环体 */
+    code = join_tac(code, body);
+    
+    /* Lcont: */
+    code = join_tac(code, mk_tac(TAC_LABEL, Lcont, NULL, NULL));
+    
+    /* 迭代 */
+    if (iter) {
+        code = join_tac(code, iter);
+    }
+    
+    /* goto Lbegin */
+    code = join_tac(code, mk_tac(TAC_GOTO, Lbegin, NULL, NULL));
+    
+    /* Lend: */
+    code = join_tac(code, mk_tac(TAC_LABEL, Lend, NULL, NULL));
+    
+    return code;
+}
+
+/* 改造 do_while */
+/**
+ * 生成 while 循环的 TAC（使用语法分析阶段预分配的标签）
+ */
+TAC *do_while(EXP *cond, TAC *body)
+{
+    /* 1. 从解析栈获取标签 */
+    LOOP_PARSE_CTX *ctx = get_current_loop_labels();
+    if (!ctx) {
+        error("Internal: while loop context not found");
+        return NULL;
+    }
+    
+    SYM *Lbegin = ctx->begin_label;
+    SYM *Lend = ctx->end_label;
+    
+    /* 2. 生成 TAC */
+    TAC *code = NULL;
+    
+    /* Lbegin: */
+    code = join_tac(code, mk_tac(TAC_LABEL, Lbegin, NULL, NULL));
+    
+    /* 条件判断 */
+    code = join_tac(code, cond->tac);
+    code = join_tac(code, mk_tac(TAC_IFZ, Lend, cond->ret, NULL));
+    
+    /* 循环体 */
+    code = join_tac(code, body);
+    
+    /* goto Lbegin */
+    code = join_tac(code, mk_tac(TAC_GOTO, Lbegin, NULL, NULL));
+    
+    /* Lend: */
+    code = join_tac(code, mk_tac(TAC_LABEL, Lend, NULL, NULL));
+    
+    return code;
+}
+
+/* break */
+TAC *do_break(void)
+{
+    if (!break_stack) {
+        error("break not within loop/switch"); 
+        return NULL;
+    }
+    return mk_tac(TAC_GOTO, break_stack->end_label, NULL, NULL);
+}
+/* continue */
+TAC *do_continue(void)
+{
+    if (!loop_stack) {
+        error("continue not within loop"); 
+        return NULL;
+    }
+    return mk_tac(TAC_GOTO, loop_stack->continue_label, NULL, NULL);
+}
+/* 改造 exit_switch */
+TAC *exit_switch(EXP *sel, CASE_NODE *cases, TAC *default_block, SYM *end_label)
+{
+    TAC *code = NULL;
+    
+    /* 1. 检查栈状态 */
+    if (!switch_stack) {
+        error("exit_switch: switch stack underflow");
+        return NULL;
+    }
+    
+    /* 2. 验证标签一致性 */
+    if (switch_stack->end_label != end_label) {
+        error("exit_switch: label mismatch");
+    }
+    
+    /* 4. 生成选择表达式的 TAC */
+    code = sel->tac;
+    
+    /* 5. 检查重复的 case 值 */
+    for (CASE_NODE *c1 = cases; c1; c1 = c1->next) {
+        for (CASE_NODE *c2 = c1->next; c2; c2 = c2->next) {
+            if (c1->value == c2->value) {
+                error("duplicate case value: %d", c1->value);
+            }
+        }
+    }
+    
+    /* 6. 为每个 case 生成比较和跳转 */
+    CASE_NODE *c = cases;
+    while (c) {
+        /* 6.1 比较：t = (sel == case_value) */
+        SYM *tmp = mk_tmp();
+        TAC *var_tac = mk_tac(TAC_VAR, tmp, NULL, NULL);
+        var_tac->prev = code;
+        code = var_tac;
+        
+        TAC *cmp_tac = mk_tac(TAC_EQ, tmp, sel->ret, mk_const(c->value));
+        cmp_tac->prev = code;
+        code = cmp_tac;
+        
+        /* 6.2 生成下一个 case 的标签 */
+        SYM *next_label_sym = mk_label(mk_lstr(next_label++));
+        
+        /* 6.3 ifz t goto next_label */
+        TAC *ifz_tac = mk_tac(TAC_IFZ, next_label_sym, tmp, NULL);
+        ifz_tac->prev = code;
+        code = ifz_tac;
+        
+        /* 6.4 case 体代码（在此期间可能遇到 break，会跳到 end_label） */
+        if (c->code) {
+            code = join_tac(code, c->code);
+        }
+        
+        /* 6.5 goto end_label（自动 break，避免 fallthrough） */
+        TAC *goto_end = mk_tac(TAC_GOTO, end_label, NULL, NULL);
+        goto_end->prev = code;
+        code = goto_end;
+        
+        /* 6.6 next_label: */
+        TAC *next_lab = mk_tac(TAC_LABEL, next_label_sym, NULL, NULL);
+        next_lab->prev = code;
+        code = next_lab;
+        
+        c = c->next;
+    }
+    
+    /* 7. default 分支（如果有） */
+    if (default_block) {
+        code = join_tac(code, default_block);
+    }
+    
+    /* 8. end_label: */
+    TAC *end_lab = mk_tac(TAC_LABEL, end_label, NULL, NULL);
+    end_lab->prev = code;
+    code = end_lab;
+    
+    /* ✅ 9. 退出 break 上下文（在弹出 switch 栈之前） */
+    exit_break_context();
+    
+    /* 10. 出栈 */
+    SWITCH_STACK *old_frame = switch_stack;
+    switch_stack = switch_stack->prev;
+    free(old_frame);
+    
+    return code;    
+}
+
+void enter_loop_context(void)
+{
+    /* 1. 分配标签 */
+    SYM *begin_label = mk_label(mk_lstr(next_label++));
+    SYM *cont_label = mk_label(mk_lstr(next_label++));
+    SYM *end_label = mk_label(mk_lstr(next_label++));
+    
+    /* 2. 压栈保存标签 */
+    LOOP_PARSE_CTX *ctx = (LOOP_PARSE_CTX *)malloc(sizeof(LOOP_PARSE_CTX));
+    if (!ctx) {
+        error("malloc failed for LOOP_PARSE_CTX");
+        exit(1);
+    }
+    ctx->begin_label = begin_label;
+    ctx->continue_label = cont_label;
+    ctx->end_label = end_label;
+    ctx->prev = loop_parse_stack;
+    loop_parse_stack = ctx;
+    
+    /* 3. 设置运行时上下文（供 break/continue 使用） */
+    enter_loop(begin_label, cont_label, end_label);
+    enter_break_context(end_label);
+}
+/**
+ * 退出循环上下文（在语法分析阶段调用）
+ */
+void exit_loop_context(void)
+{
+    /* 1. 退出运行时上下文 */
+    exit_break_context();
+    exit_loop();
+    
+    /* 2. 弹出解析栈 */
+    if (!loop_parse_stack) {
+        error("Internal: loop_parse_stack underflow");
+        return;
+    }
+    
+    LOOP_PARSE_CTX *old = loop_parse_stack;
+    loop_parse_stack = old->prev;
+    free(old);
 }

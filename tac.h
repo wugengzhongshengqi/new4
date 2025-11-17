@@ -175,6 +175,18 @@ typedef struct case_node {
     struct case_node *next; /* 链表下一个 case */
 } CASE_NODE;
 
+typedef struct loop_context {
+    SYM *begin_label;
+    SYM *continue_label;
+    SYM *end_label;
+    struct loop_context *prev;
+} LOOP_CTX;
+
+typedef struct break_context {
+    SYM *end_label;
+    struct break_context *prev;
+} BREAK_CTX;
+
 /* 由语法/语义阶段维护的全局变量
  * file_x/file_s: 输出文件句柄（文本/目标）
  * yylineno: 当前词法/语法分析行号
@@ -271,3 +283,16 @@ TAC *do_switch(EXP *sel, CASE_NODE *cases, TAC *default_block);
 TAC *do_break(void);
 SYM *enter_switch(void);  /* 进入 switch，预分配标签 */
 TAC *exit_switch(EXP *sel, CASE_NODE *cases, TAC *default_block, SYM *end_label);  /* 退出 switch，生成 TAC */
+/* 循环管理 */
+void enter_loop(SYM *begin_label, SYM *continue_label, SYM *end_label);
+void exit_loop(void);
+/* break 管理 */
+void enter_break_context(SYM *end_label);
+void exit_break_context(void);
+/* for 循环 */
+TAC *do_for(TAC *init, EXP *cond, TAC *iter, TAC *body);
+/* continue 语句 */
+TAC *do_continue(void);
+/* 语法分析阶段的循环上下文管理 */
+void enter_loop_context(void);
+void exit_loop_context(void);
