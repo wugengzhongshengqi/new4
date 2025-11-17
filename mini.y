@@ -31,10 +31,12 @@ void yyerror(char* msg);
 	struct {
 		void *chain;
 	} field_chain;
+	void *case_list;
 }
 
 /* 终结符与关键字 */
 %token INT CHAR STRUCT DOT EQ NE LT LE GT GE UMINUS UADDR UDEREF IF ELSE WHILE FUNC INPUT OUTPUT RETURN
+%token SWITCH CASE DEFAULT BREAK
 %token <string> INTEGER IDENTIFIER TEXT
 %token <character> CHARACTER
 
@@ -59,6 +61,11 @@ void yyerror(char* msg);
 %type <tac> struct_var_list        
 %type <tac> struct_var_declaration   
 %type <field_chain> field_access    
+%type <tac> switch_statement
+%type <case_list> case_list_opt
+%type <case_list> case_list
+%type <case_list> case_clause
+%type <tac> default_opt
 
 %%
 
@@ -287,6 +294,11 @@ statement : assignment_statement ';'
 | return_statement ';'
 | if_statement
 | while_statement
+| switch_statement 
+| BREAK ';'
+{
+	$$ = do_break();
+}
 | block
 | error
 {
@@ -317,7 +329,10 @@ declaration_list        :
 
 /* 语句列表，可串接 */
 /* statement_list：可为空的语句串接 */
-statement_list : statement
+statement_list :
+{
+    $$ = NULL;
+}
 | statement_list statement
 {
 	$$=join_tac($1, $2);
@@ -554,6 +569,61 @@ index_list : '[' expression ']'
     $$->next = $1;  /* 逆向链接，后续需要反转 */
 }
 ;
+
+/* ========== ✅ 最终版本：无冲突的 switch 规则 ========== */
+
+/* switch_statement */
+switch_statement : SWITCH '(' expression ')' 
+{
+    $<sym>$ = enter_switch();
+}
+'{' case_list_opt default_opt '}'
+{
+    $$ = exit_switch($3, $7, $8, $<sym>5);
+}
+;
+
+/* case_list_opt：可选的 case 列表 */
+case_list_opt : /* empty */
+{
+    $$ = NULL;
+}
+| case_list
+{
+    $$ = $1;
+}
+;
+
+/* case_list：一个或多个 case */
+case_list : case_clause
+{
+    $$ = $1;
+}
+| case_list case_clause
+{
+    $$ = append_case($1, $2);
+}
+;
+
+/* case_clause：单个 case */
+case_clause : CASE INTEGER ':' statement_list
+{
+    $$ = mk_case(atoi($2), $4);
+}
+;
+
+/* default_opt：可选的 default */
+default_opt : /* empty */
+{
+    $$ = NULL;
+}
+| DEFAULT ':' statement_list
+{
+    $$ = $3;
+}
+;
+
+
 
 %%
 

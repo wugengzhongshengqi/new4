@@ -24,6 +24,7 @@ int scope, next_tmp, next_label;
 SYM *sym_tab_global, *sym_tab_local;
 TAC *tac_first, *tac_last;
 int decl_dtype;
+static SYM *current_switch_end = NULL;
 
 /* 初始化 TAC 构造所需的全局变量 */
 void tac_init()
@@ -2434,4 +2435,179 @@ EXP *reverse_exp_list(EXP *list)
     }
     
     return prev;
+}
+
+/* ========================================
+ * Switch 语句相关函数实现（修复版）
+ * ======================================== */
+
+/* ✅ 全局变量：switch 标签栈（支持嵌套） */
+typedef struct switch_stack {
+    SYM *end_label;
+    struct switch_stack *prev;
+} SWITCH_STACK;
+
+static SWITCH_STACK *switch_stack = NULL;
+
+/**
+ * 进入 switch：预分配结束标签并压栈
+ * @return 结束标签（需保存到语法规则中）
+ */
+SYM *enter_switch(void)
+{
+    /* 1. 分配新的结束标签 */
+    SYM *end_label = mk_label(mk_lstr(next_label++));
+    
+    /* 2. 压栈（支持嵌套） */
+    SWITCH_STACK *new_frame = (SWITCH_STACK *)malloc(sizeof(SWITCH_STACK));
+    if (!new_frame) {
+        error("malloc failed for SWITCH_STACK");
+        exit(1);
+    }
+    new_frame->end_label = end_label;
+    new_frame->prev = switch_stack;
+    switch_stack = new_frame;
+    
+    return end_label;
+}
+
+/**
+ * 退出 switch：生成 TAC 并出栈
+ * @param sel 选择表达式
+ * @param cases case 列表
+ * @param default_block default 代码块
+ * @param end_label 预分配的结束标签（由 enter_switch 返回）
+ * @return 完整的 switch TAC
+ */
+TAC *exit_switch(EXP *sel, CASE_NODE *cases, TAC *default_block, SYM *end_label)
+{
+    TAC *code = NULL;
+    
+    /* 1. 检查栈状态 */
+    if (!switch_stack) {
+        error("exit_switch: switch stack underflow");
+        return NULL;
+    }
+    
+    /* 2. 验证标签一致性 */
+    if (switch_stack->end_label != end_label) {
+        error("exit_switch: label mismatch");
+    }
+    
+    /* 3. 生成选择表达式的 TAC */
+    code = sel->tac;
+    
+    /* 4. 检查重复的 case 值 */
+    for (CASE_NODE *c1 = cases; c1; c1 = c1->next) {
+        for (CASE_NODE *c2 = c1->next; c2; c2 = c2->next) {
+            if (c1->value == c2->value) {
+                error("duplicate case value: %d", c1->value);
+            }
+        }
+    }
+    
+    /* 5. 为每个 case 生成比较和跳转 */
+    CASE_NODE *c = cases;
+    while (c) {
+        /* 5.1 比较：t = (sel == case_value) */
+        SYM *tmp = mk_tmp();
+        TAC *var_tac = mk_tac(TAC_VAR, tmp, NULL, NULL);
+        var_tac->prev = code;
+        code = var_tac;
+        
+        TAC *cmp_tac = mk_tac(TAC_EQ, tmp, sel->ret, mk_const(c->value));
+        cmp_tac->prev = code;
+        code = cmp_tac;
+        
+        /* 5.2 生成下一个 case 的标签 */
+        SYM *next_label_sym = mk_label(mk_lstr(next_label++));
+        
+        /* 5.3 ifz t goto next_label */
+        TAC *ifz_tac = mk_tac(TAC_IFZ, next_label_sym, tmp, NULL);
+        ifz_tac->prev = code;
+        code = ifz_tac;
+        
+        /* 5.4 case 体代码 */
+        if (c->code) {
+            code = join_tac(code, c->code);
+        }
+        
+        /* 5.5 goto end_label（自动 break，避免 fallthrough） */
+        TAC *goto_end = mk_tac(TAC_GOTO, end_label, NULL, NULL);
+        goto_end->prev = code;
+        code = goto_end;
+        
+        /* 5.6 next_label: */
+        TAC *next_lab = mk_tac(TAC_LABEL, next_label_sym, NULL, NULL);
+        next_lab->prev = code;
+        code = next_lab;
+        
+        c = c->next;
+    }
+    
+    /* 6. default 分支（如果有） */
+    if (default_block) {
+        code = join_tac(code, default_block);
+    }
+    
+    /* 7. end_label: */
+    TAC *end_lab = mk_tac(TAC_LABEL, end_label, NULL, NULL);
+    end_lab->prev = code;
+    code = end_lab;
+    
+    /* 8. 出栈 */
+    SWITCH_STACK *old_frame = switch_stack;
+    switch_stack = switch_stack->prev;
+    free(old_frame);
+    
+    return code;
+}
+
+/**
+ * break 语句：生成跳转到当前 switch 结束标签的 GOTO
+ * @return TAC_GOTO 指令
+ */
+TAC *do_break(void)
+{
+    if (!switch_stack) {
+        error("break statement not within switch");
+        return NULL;
+    }
+    
+    return mk_tac(TAC_GOTO, switch_stack->end_label, NULL, NULL);
+}
+
+/**
+ * 创建一个 case 节点
+ */
+CASE_NODE *mk_case(int value, TAC *code)
+{
+    CASE_NODE *c = (CASE_NODE *)malloc(sizeof(CASE_NODE));
+    if (!c) {
+        error("malloc failed for CASE_NODE");
+        exit(1);
+    }
+    
+    c->value = value;
+    c->code = code;
+    c->next = NULL;
+    
+    return c;
+}
+
+/**
+ * 将新 case 追加到 case 列表末尾
+ */
+CASE_NODE *append_case(CASE_NODE *list, CASE_NODE *new_case)
+{
+    if (!list) return new_case;
+    if (!new_case) return list;
+    
+    CASE_NODE *tail = list;
+    while (tail->next) {
+        tail = tail->next;
+    }
+    tail->next = new_case;
+    
+    return list;
 }

@@ -24,6 +24,14 @@
 
 "while"  {  return WHILE;  }
 
+"switch" {  return SWITCH;  }
+
+"case"   {  return CASE;    }
+
+"default" {  return DEFAULT; }
+
+"break"  {  return BREAK;   }
+
 [A-Za-z]([A-Za-z]|[0-9])*  {  
 	yylval.string = strdup(yytext); 
 	return IDENTIFIER;

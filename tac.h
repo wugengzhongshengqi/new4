@@ -168,6 +168,12 @@ typedef struct {
     int size;        /* 字段大小（1=char, 4=int/指针） */
     int kind;        /* 字段类型（FIELD_INT, FIELD_CHAR等） */
 } FIELD_INFO;
+/* Case 节点：单个 case 分支 */
+typedef struct case_node {
+    int value;              /* case 常量值 */
+    TAC *code;              /* case 体的 TAC */
+    struct case_node *next; /* 链表下一个 case */
+} CASE_NODE;
 
 /* 由语法/语义阶段维护的全局变量
  * file_x/file_s: 输出文件句柄（文本/目标）
@@ -246,8 +252,7 @@ FIELD_ACCESS *append_array_access(FIELD_ACCESS *chain, EXP *indices);
 /* 字段读写 */
 EXP *do_field_read(FIELD_ACCESS *chain);
 TAC *do_field_write(FIELD_ACCESS *chain, EXP *val);
-EXP *do_field_addr(FIELD_ACCESS *chain);  /* ✅ 新增：字段取址 */
-/* ========== ✅ 新增：辅助函数 ========== */
+EXP *do_field_addr(FIELD_ACCESS *chain); 
 /* 判断符号类型 */
 int is_array(SYM *s);
 int is_struct(SYM *s);
@@ -259,3 +264,10 @@ int get_array_size(ARR_META *arr);
 /* 反转链表（用于字段访问链和索引列表） */
 FIELD_ACCESS *reverse_field_access(FIELD_ACCESS *chain);
 EXP *reverse_exp_list(EXP *list);
+/* Switch 相关函数声明 */
+CASE_NODE *mk_case(int value, TAC *code);
+CASE_NODE *append_case(CASE_NODE *list, CASE_NODE *new_case);
+TAC *do_switch(EXP *sel, CASE_NODE *cases, TAC *default_block);
+TAC *do_break(void);
+SYM *enter_switch(void);  /* 进入 switch，预分配标签 */
+TAC *exit_switch(EXP *sel, CASE_NODE *cases, TAC *default_block, SYM *end_label);  /* 退出 switch，生成 TAC */
