@@ -13,8 +13,26 @@
 /* 数据类型：基本类型与指针类型 */
 #define DT_INT 0
 #define DT_CHAR 1
-#define DT_PTR_INT 2
-#define DT_PTR_CHAR 3
+#define DT_PTR 2
+#define DT_STRUCT 3
+#define DT_ARRAY 4
+
+/* 字段类型枚举 */
+#define FIELD_INT 1
+#define FIELD_CHAR 2
+#define FIELD_PTR 3
+#define FIELD_STRUCT 4
+#define FIELD_ARRAY 5
+
+/* 数组元素类型枚举 */
+#define ELEM_INT 1
+#define ELEM_CHAR 2
+#define ELEM_PTR 3
+#define ELEM_STRUCT 4
+
+/* 作用域常量 */
+#define SCOPE_GLOBAL 0
+#define SCOPE_LOCAL 1
 
 /* TAC 操作码：三地址码的具体操作 */ 
 #define TAC_UNDEF 0 /* undefine */
@@ -45,6 +63,8 @@
 #define TAC_ADDR 25   /* a = &b */
 #define TAC_DEREF_R 26 /* a = *b */
 #define TAC_DEREF_W 27 /* *a = b */
+#define TAC_FIELD_READ 28 /* a = b.field */
+#define TAC_FIELD_WRITE 29 /* b.field = a */
 
 /* 符号表项
  * type: 符号类别（变量/函数/文本/整型/标签）
@@ -108,6 +128,47 @@ typedef struct exp
 	void *etc;
 } EXP;
 
+/* 字段元数据结构 */
+typedef struct FIELD_META {
+    char *name;      /* 字段名 */
+    int kind;           /* 字段类型：FIELD_INT/FIELD_CHAR/FIELD_PTR/FIELD_STRUCT/FIELD_ARRAY */
+    int offset;         /* 相对结构体起始的偏移（字节） */
+    void *etc;          /* 扩展信息：ARR_META* 或 STRUCT_META* */
+    struct FIELD_META *next;  /* 链表（用于构建阶段） */
+} FIELD_META;
+/* 结构体元数据结构 */
+typedef struct STRUCT_META {
+    char *name;      /* 结构体名 */
+    FIELD_META *fields; /* 字段列表 */
+    int field_count;    /* 字段数量 */
+    int size;           /* 结构体总大小（字节） */
+    struct STRUCT_META *next;  /* 链表（结构体符号表） */
+} STRUCT_META;
+/* 数组元数据结构（扩展版） */
+#define MAX_DIM 16
+typedef struct ARR_META {
+    int ndims;              /* 维度数量 */
+    int dims[MAX_DIM];      /* 每个维度的大小 */
+    int total_elems;        /* ✅ 总元素数量（改名） */
+    int strides[MAX_DIM];   /* ✅ 新增：每个维度的步长 */
+    int elem_size;          /* 元素大小（字节） */
+    int elem_type;          /* 元素类型 */
+    void *elem_meta;        /* 元素元数据（用于嵌套结构） */
+} ARR_META;
+/* 字段访问链节点 */
+typedef struct FIELD_ACCESS {
+    int type;               /* 访问类型：0=字段，1=数组索引 */
+    char *name;          /* 字段名（type=0） */
+    EXP *index;             /* 数组索引表达式（type=1） */
+    struct FIELD_ACCESS *next;
+} FIELD_ACCESS;
+/* 字段访问信息（用于代码生成） */
+typedef struct {
+    int offset;      /* 字段在结构体中的偏移量 */
+    int size;        /* 字段大小（1=char, 4=int/指针） */
+    int kind;        /* 字段类型（FIELD_INT, FIELD_CHAR等） */
+} FIELD_INFO;
+
 /* 由语法/语义阶段维护的全局变量
  * file_x/file_s: 输出文件句柄（文本/目标）
  * yylineno: 当前词法/语法分析行号
@@ -119,8 +180,10 @@ typedef struct exp
 extern FILE *file_x, *file_s;
 extern int yylineno, scope, next_tmp, next_label;
 extern SYM *sym_tab_global, *sym_tab_local;
+extern STRUCT_META *struct_tab;
 extern TAC *tac_first, *tac_last;
 extern int decl_dtype;
+extern STRUCT_META *decl_struct;
 
 /* 接口函数声明：构造/串接/输出/翻译等 */
 void tac_init();
@@ -160,3 +223,38 @@ TAC *declare_array_var(char *name, int *dims, int ndims);
 EXP *do_array_read(SYM *arr, EXP *indices);
 TAC *do_array_write(SYM *arr, EXP *indices, EXP *val);
 void error(const char *format, ...);
+/* 结构体定义 */
+STRUCT_META *finalize_struct(char *name, FIELD_META *fields);
+FIELD_META *create_field(char *name, int *dims, int ndims);
+FIELD_META *create_field_ptr(char *name);
+FIELD_META *append_fields(FIELD_META *list1, FIELD_META *list2);
+FIELD_META *append_field_name(FIELD_META *list, char *name, int *dims, int ndims);
+FIELD_META *append_field_name_ptr(FIELD_META *list, char *name);
+void set_field_type(FIELD_META *fields, int type);
+void set_field_struct_type(FIELD_META *fields, char *struct_name);
+/* 结构体查找 */
+STRUCT_META *lookup_struct(char *name);
+FIELD_META *find_field(STRUCT_META *meta, char *name);
+/* 结构体变量声明 */
+TAC *declare_struct_var(char *name, STRUCT_META *meta);
+TAC *declare_struct_array(char *name, STRUCT_META *meta, int *dims, int ndims);
+/* 字段访问链构建 */
+FIELD_ACCESS *create_field_access(char *var, char *field);
+FIELD_ACCESS *create_field_access_array(char *var, EXP *indices, char *field);
+FIELD_ACCESS *append_field_access(FIELD_ACCESS *chain, char *field);
+FIELD_ACCESS *append_array_access(FIELD_ACCESS *chain, EXP *indices);
+/* 字段读写 */
+EXP *do_field_read(FIELD_ACCESS *chain);
+TAC *do_field_write(FIELD_ACCESS *chain, EXP *val);
+/* ========== ✅ 新增：辅助函数 ========== */
+/* 判断符号类型 */
+int is_array(SYM *s);
+int is_struct(SYM *s);
+int is_struct_array(SYM *s);
+/* 计算结构体/数组大小 */
+int get_type_size(SYM *s);
+int get_struct_size(STRUCT_META *meta);
+int get_array_size(ARR_META *arr);
+/* 反转链表（用于字段访问链和索引列表） */
+FIELD_ACCESS *reverse_field_access(FIELD_ACCESS *chain);
+EXP *reverse_exp_list(EXP *list);

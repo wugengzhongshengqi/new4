@@ -71,7 +71,7 @@ L2:
 	# t2 = *pa
 	STO (R2+12),R5
 	LOD R7,(R2+40)
-	LDC R7,(R5)
+	LOD R7,(R5)
 
 	# b = t2
 	STO (R2+40),R7

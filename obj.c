@@ -506,7 +506,12 @@ void asm_code(TAC *c)
 			int size = 4; /* 默认大小：普通变量或指针 */
 
 			/* 检查是否为数组 */
-			if(c->a->etc != NULL)
+			if(c->a->dtype == DT_STRUCT && c->a->etc != NULL)
+			{
+				STRUCT_META *meta = (STRUCT_META *)(c->a->etc);
+				size = meta->size;
+			}
+			else if(c->a->etc != NULL)
 			{
 				/* 数组元数据结构定义（与 tac.c 中一致） */
 				typedef struct {
@@ -574,10 +579,7 @@ void asm_code(TAC *c)
 			int rp = reg_alloc(c->b);
 			int rd = reg_alloc_exclude(c->a, rp);
 			/* choose byte or word load by pointer dtype */
-			if(c->b->dtype==DT_PTR_CHAR)
-				out_str(file_s, "\tLDC R%u,(R%u)\n", rd, rp);
-			else
-				out_str(file_s, "\tLOD R%u,(R%u)\n", rd, rp);
+			out_str(file_s, "\tLOD R%u,(R%u)\n", rd, rp);
 			rdesc_fill(rd, c->a, MODIFIED);
 			return;
 		}
@@ -586,10 +588,44 @@ void asm_code(TAC *c)
 		{
 			int rp = reg_alloc(c->a);
 			int rv = reg_alloc_exclude(c->b, rp);
-			if(c->a->dtype==DT_PTR_CHAR)
-				out_str(file_s, "\tSTC (R%u),R%u\n", rp, rv);
-			else
-				out_str(file_s, "\tSTO (R%u),R%u\n", rp, rv);
+			out_str(file_s, "\tSTO (R%u),R%u\n", rp, rv);
+			return;
+		}
+
+		case TAC_FIELD_READ:
+		{
+			/* 结构体字段读取：dest = base.field */
+			FIELD_INFO *info = (FIELD_INFO *)c->c;  /* 字段信息 */
+			int r_base = reg_alloc(c->b);            /* 基地址 */
+			int r_dest = reg_alloc_exclude(c->a, r_base); /* 目标寄存器 */
+			
+			/* 计算字段地址：base + offset */
+			out_str(file_s, "\tLOD R%u,R%u\n", r_dest, r_base);
+			if(info->offset > 0) {
+				out_str(file_s, "\tADD R%u,%d\n", r_dest, info->offset);
+			}
+			
+			out_str(file_s, "\tLOD R%u,(R%u)\n", r_dest, r_dest);
+			
+			rdesc_fill(r_dest, c->a, MODIFIED);
+			return;
+		}
+		case TAC_FIELD_WRITE:
+		{
+			/* 结构体字段写入：base.field = src */
+			FIELD_INFO *info = (FIELD_INFO *)c->c;  /* 字段信息 */
+			int r_base = reg_alloc(c->a);            /* 基地址 */
+			int r_src = reg_alloc_exclude(c->b, r_base); /* 源值 */
+			int r_addr = reg_alloc_exclude(mk_tmp(), r_base); /* 临时地址 */
+			
+			/* 计算字段地址：base + offset */
+			out_str(file_s, "\tLOD R%u,R%u\n", r_addr, r_base);
+			if(info->offset > 0) {
+				out_str(file_s, "\tADD R%u,%d\n", r_addr, info->offset);
+			}
+			
+			out_str(file_s, "\tSTO (R%u),R%u\n", r_addr, r_src);
+			
 			return;
 		}
 

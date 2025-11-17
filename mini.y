@@ -27,10 +27,14 @@ void yyerror(char* msg);
 		int ndims;
 	} arr_dims;
 	EXP *exp_list;
+	void *meta;
+	struct {
+		void *chain;
+	} field_chain;
 }
 
 /* 终结符与关键字 */
-%token INT CHAR EQ NE LT LE GT GE UMINUS UADDR UDEREF IF ELSE WHILE FUNC INPUT OUTPUT RETURN
+%token INT CHAR STRUCT DOT EQ NE LT LE GT GE UMINUS UADDR UDEREF IF ELSE WHILE FUNC INPUT OUTPUT RETURN
 %token <string> INTEGER IDENTIFIER TEXT
 %token <character> CHARACTER
 
@@ -40,6 +44,7 @@ void yyerror(char* msg);
 %left '*' '/'
 %right UMINUS
 %right UADDR UDEREF
+%left DOT '[' '('
 
 /* 非终结符的语义类型 */
 %type <tac> program function_declaration_list function_declaration function parameter_list variable_list statement assignment_statement return_statement if_statement while_statement call_statement block declaration_list declaration statement_list input_statement output_statement
@@ -48,6 +53,12 @@ void yyerror(char* msg);
 %type <tac> variable_declaration
 %type <arr_dims> array_dimensions
 %type <exp_list> index_list
+%type <meta> struct_definition       
+%type <meta> field_list            
+%type <meta> field_declarators     
+%type <tac> struct_var_list        
+%type <tac> struct_var_declaration   
+%type <field_chain> field_access    
 
 %%
 
@@ -70,7 +81,81 @@ function_declaration_list : function_declaration
 ;
 
 function_declaration : function
+    {
+        $$ = $1;  /* 返回 TAC* */
+    }
 | declaration
+    {
+        $$ = $1;  /* 返回 TAC* */
+    }
+| struct_definition
+    {
+        $$ = NULL;  /* 结构体定义不生成 TAC，返回 NULL */
+    }
+;
+
+struct_definition : STRUCT IDENTIFIER '{' field_list '}' ';'
+{
+	$$ = finalize_struct($2, $4);
+}
+;
+
+field_list : INT field_declarators ';'
+{
+	$$ = $2;
+	set_field_type($$, FIELD_INT);
+}
+| CHAR field_declarators ';'
+{
+	$$ = $2;
+	set_field_type($$, FIELD_CHAR);
+}
+| STRUCT IDENTIFIER field_declarators ';'
+{
+	$$ = $3;
+	set_field_struct_type($$, $2);
+}
+| field_list INT field_declarators ';'
+{
+	$$ = append_fields($1, $3);
+	set_field_type($3, FIELD_INT);
+}
+| field_list CHAR field_declarators ';'
+{
+	$$ = append_fields($1, $3);
+	set_field_type($3, FIELD_CHAR);
+}
+| field_list STRUCT IDENTIFIER field_declarators ';'
+{
+	$$ = append_fields($1, $4);
+	set_field_struct_type($4, $3);
+}
+;
+
+field_declarators : IDENTIFIER
+{
+	$$ = create_field($1, NULL, 0);
+}
+| '*' IDENTIFIER
+{
+	$$ = create_field_ptr($2);
+}
+| IDENTIFIER array_dimensions
+{
+	$$ = create_field($1, $2.dims, $2.ndims);
+}
+| field_declarators ',' IDENTIFIER
+{
+	$$ = append_field_name($1, $3, NULL, 0);
+}
+| field_declarators ',' '*' IDENTIFIER
+{
+	$$ = append_field_name_ptr($1, $4);
+}
+| field_declarators ',' IDENTIFIER array_dimensions
+{
+	$$ = append_field_name($1, $3, $4.dims, $4.ndims);
+}
 ;
 
 /* 变量/指针声明，影响后续变量 dtype（int/char） */
@@ -82,6 +167,34 @@ declaration : INT { decl_dtype=DT_INT; } variable_list ';'
 | CHAR { decl_dtype=DT_CHAR; } variable_list ';'
 {
     $$=$3;
+}
+| STRUCT IDENTIFIER
+{
+	decl_struct = lookup_struct($2);
+	if(!decl_struct) {
+		yyerror("Undefined struct");
+	}
+} 
+struct_var_list ';'
+{
+	$$=$4;
+}
+;
+
+struct_var_list : struct_var_declaration
+| struct_var_list ',' struct_var_declaration
+{
+	$$=join_tac($1, $3);
+}
+;
+
+struct_var_declaration : IDENTIFIER
+{
+	$$=declare_struct_var($1, decl_struct);
+}
+| IDENTIFIER array_dimensions
+{
+	$$=declare_struct_array($1, decl_struct, $2.dims, $2.ndims);
 }
 ;
 
@@ -225,6 +338,30 @@ assignment_statement : IDENTIFIER '=' expression
 {
 	$$ = do_array_write(get_var($1),$2,$4);
 }
+| field_access '=' expression
+{
+	$$ = do_field_write($1.chain, $3);
+}
+;
+
+field_access : IDENTIFIER DOT IDENTIFIER
+{
+	$$.chain = create_field_access($1, $3);
+}
+| IDENTIFIER index_list DOT IDENTIFIER
+{
+    $$.chain = create_field_access_array($1, $2, $4);
+}
+| field_access DOT IDENTIFIER
+{
+	$$.chain = append_field_access($1.chain, $3);
+}
+| field_access '[' expression ']'
+{
+    EXP *single_index = $3;
+    single_index->next = NULL;  /* 确保是单元素列表 */
+    $$.chain = append_array_access($1.chain, single_index);
+}
 ;
 
 /* 表达式：算术/比较/括号/字面量/取址/解引用/变量/调用 */
@@ -300,6 +437,10 @@ expression : expression '+' expression
 | IDENTIFIER index_list
 {
 	$$ = do_array_read(get_var($1), $2);
+}
+| field_access
+{
+	$$ = do_field_read($1.chain);
 }
 | call_expression
 {

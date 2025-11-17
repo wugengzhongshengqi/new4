@@ -1,35 +1,35 @@
 
 # tac list
 
-0x5b8387f948b0	label main
-0x5b8387f948f0	begin
-0x5b8387f937f0	var a
-0x5b8387f938a0	var pa
-0x5b8387f93950	var b
-0x5b8387f93a00	var i
-0x5b8387f93ab0	var pi
-0x5b8387f93b60	var j
-0x5b8387f93bc0	input a
-0x5b8387f93c20	input i
-0x5b8387f93ec0	ifz 0 goto L2
-0x5b8387f93d90	output L1
-0x5b8387f93e80	label L2
-0x5b8387f93f90	var t0
-0x5b8387f93fd0	t0 = &a
-0x5b8387f94040	pa = t0
-0x5b8387f94130	var t1
-0x5b8387f94170	t1 = &i
-0x5b8387f941e0	pi = t1
-0x5b8387f94300	var t2
-0x5b8387f94340	t2 = *pa
-0x5b8387f94380	b = t2
-0x5b8387f944a0	var t3
-0x5b8387f944e0	t3 = *pi
-0x5b8387f94520	j = t3
-0x5b8387f946e0	ifz 0 goto L3
-0x5b8387f945d0	output L1
-0x5b8387f946a0	label L3
-0x5b8387f94740	output b
-0x5b8387f947a0	output j
-0x5b8387f94800	output L1
-0x5b8387f94930	end
+0x5928f3e548b0	label main
+0x5928f3e548f0	begin
+0x5928f3e537f0	var a
+0x5928f3e538a0	var pa
+0x5928f3e53950	var b
+0x5928f3e53a00	var i
+0x5928f3e53ab0	var pi
+0x5928f3e53b60	var j
+0x5928f3e53bc0	input a
+0x5928f3e53c20	input i
+0x5928f3e53ec0	ifz 0 goto L2
+0x5928f3e53d90	output L1
+0x5928f3e53e80	label L2
+0x5928f3e53f90	var t0
+0x5928f3e53fd0	t0 = &a
+0x5928f3e54040	pa = t0
+0x5928f3e54130	var t1
+0x5928f3e54170	t1 = &i
+0x5928f3e541e0	pi = t1
+0x5928f3e54300	var t2
+0x5928f3e54340	t2 = *pa
+0x5928f3e54380	b = t2
+0x5928f3e544a0	var t3
+0x5928f3e544e0	t3 = *pi
+0x5928f3e54520	j = t3
+0x5928f3e546e0	ifz 0 goto L3
+0x5928f3e545d0	output L1
+0x5928f3e546a0	label L3
+0x5928f3e54740	output b
+0x5928f3e547a0	output j
+0x5928f3e54800	output L1
+0x5928f3e54930	end

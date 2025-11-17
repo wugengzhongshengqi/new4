@@ -10,15 +10,6 @@
 #include <ctype.h>
 #include "tac.h"
 
-/* 数组元数据结构：存储维度信息与步幅 */
-typedef struct {
-    int dims[16];      // 各维度大小
-    int ndims;         // 维度数量
-    int strides[16];   // 各维度步幅（元素数量）
-    int elem_size;     // 元素大小（字节）
-    int total_elems;   // 总元素数量
-} ARR_META;
-
 /* 全局状态
  * scope: 当前作用域标记，0=全局，1=局部（函数体内）
  * next_tmp: 下一个临时变量编号（mk_tmp 生成 tN）
@@ -723,13 +714,50 @@ void out_tac(FILE *f, TAC *i)
         break;
 
         case TAC_VAR:
-        if(i->a->etc != NULL) {
-            ARR_META *meta = (ARR_META *)i->a->etc;
-            fprintf(f, "var %s[", to_str(i->a, sa));
-            for(int j=0; j<meta->ndims; j++) {
-                fprintf(f, "%d%s", meta->dims[j], (j<meta->ndims-1)?"][":"]");
+        if (i->a->etc != NULL) {
+            /* ✅ 首先检查是否真的是数组类型 */
+            if (i->a->dtype == DT_ARRAY) {
+                ARR_META *meta = (ARR_META *)i->a->etc;
+                
+                /* ✅ 检查元数据的有效性 */
+                if (!meta) {
+                    fprintf(f, "var %s /* 错误: meta is NULL */", to_str(i->a, sa));
+                    break;
+                }
+                
+                if (!meta->dims) {
+                    fprintf(f, "var %s /* 错误: dims is NULL */", to_str(i->a, sa));
+                    break;
+                }
+                
+                if (meta->ndims <= 0 || meta->ndims > 10) {
+                    fprintf(f, "var %s /* 错误: ndims=%d 无效 */", 
+                            to_str(i->a, sa), meta->ndims);
+                    break;
+                }
+                
+                /* ✅ 现在可以安全打印了 */
+                fprintf(f, "var %s[", to_str(i->a, sa));
+                for (int j = 0; j < meta->ndims; j++) {
+                    fprintf(f, "%d%s", meta->dims[j], 
+                            (j < meta->ndims - 1) ? "][" : "]");
+                }
+                
+            } else if (i->a->dtype == DT_STRUCT) {
+                /* ✅ 结构体变量 */
+                STRUCT_META *smeta = (STRUCT_META *)i->a->etc;
+                if (smeta && smeta->name) {
+                    fprintf(f, "var %s /* struct %s */", to_str(i->a, sa), smeta->name);
+                } else {
+                    fprintf(f, "var %s /* struct */", to_str(i->a, sa));
+                }
+                
+            } else {
+                /* ✅ 其他有 etc 但非数组/结构体的情况 */
+                fprintf(f, "var %s /* etc 非空但类型未知 */", to_str(i->a, sa));
             }
         } else {
+            /* ✅ 普通变量（无元数据） */
             fprintf(f, "var %s", to_str(i->a, sa));
         }
         break;
@@ -751,6 +779,18 @@ void out_tac(FILE *f, TAC *i)
         case TAC_DEREF_W:
         fprintf(f, "*%s = %s", to_str(i->a, sa), to_str(i->b, sb));
         break;
+        case TAC_FIELD_READ:
+            fprintf(f, "%s = %s.field_%d", 
+                    to_str(i->a, sa), 
+                    to_str(i->b, sb), 
+                    ((FIELD_INFO *)i->c)->offset);
+            break;
+        case TAC_FIELD_WRITE:
+            fprintf(f, "%s.field_%d = %s", 
+                    to_str(i->a, sa), 
+                    ((FIELD_INFO *)i->c)->offset,
+                    to_str(i->b, sb));
+            break;
 
 		default:
 		error("unknown TAC opcode");
@@ -777,7 +817,7 @@ TAC *declare_ptr_var(char *name)
     sym->type=SYM_VAR;
     sym->name=name;
     sym->offset=-1;
-    sym->dtype=(decl_dtype==DT_CHAR)?DT_PTR_CHAR:DT_PTR_INT; /* 根据当前声明基本类型决定指针的目标类型 */
+    sym->dtype=DT_PTR; /* 根据当前声明基本类型决定指针的目标类型 */
 
     if(scope)
         insert_sym(&sym_tab_local,sym);
@@ -1101,7 +1141,7 @@ EXP *do_addr(SYM *var)
     temp=mk_tac(TAC_VAR, mk_tmp(), NULL, NULL);
     temp->prev=NULL;
     /* 根据 var 的基本类型设置结果临时的指针类型 */
-    if(var->dtype==DT_CHAR) temp->a->dtype=DT_PTR_CHAR; else temp->a->dtype=DT_PTR_INT;
+    temp->a->dtype=DT_PTR;
     ret=mk_tac(TAC_ADDR, temp->a, var, NULL);
     ret->prev=temp;
 
@@ -1117,7 +1157,7 @@ EXP *do_deref_read(EXP *ptr)
     temp=mk_tac(TAC_VAR, mk_tmp(), NULL, NULL);
     temp->prev=ptr->tac;
     /* 根据指针类型设置读取结果的基本类型（字节/整型） */
-    if(ptr->ret->dtype==DT_PTR_CHAR) temp->a->dtype=DT_CHAR; else temp->a->dtype=DT_INT;
+    temp->a->dtype=DT_PTR;
     ret=mk_tac(TAC_DEREF_R, temp->a, ptr->ret, NULL);
     ret->prev=temp;
 
@@ -1132,4 +1172,1009 @@ TAC *do_deref_write(SYM *ptr, EXP *val)
     TAC *code=mk_tac(TAC_DEREF_W, ptr, val->ret, NULL);
     code->prev=val->tac;
     return code;
+}
+
+/* ========================================
+ * 全局变量定义（结构体相关）
+ * ======================================== */
+STRUCT_META *struct_tab = NULL;      /* 全局结构体定义表 */
+STRUCT_META *decl_struct = NULL;     /* 当前正在声明的结构体类型 */
+
+/* ========================================
+ * 结构体相关函数实现
+ * ======================================== */
+
+/**
+ * 创建并注册结构体定义
+ */
+STRUCT_META *finalize_struct(char *name, FIELD_META *fields)
+{
+    STRUCT_META *meta = (STRUCT_META *)malloc(sizeof(STRUCT_META));
+    if (!meta) {
+        fprintf(stderr, "ERROR: malloc failed for STRUCT_META\n");
+        exit(1);
+    }
+    
+    meta->name = strdup(name);
+    if (!meta->name) {
+        fprintf(stderr, "ERROR: strdup failed for struct name '%s'\n", name);
+        free(meta);
+        exit(1);
+    }
+    
+    meta->fields = fields;
+    meta->field_count = 0;
+    meta->size = 0;
+    
+    /* 计算字段数量和总大小，并设置每个字段的偏移量 */
+    FIELD_META *f = fields;
+    while (f) {
+        meta->field_count++;
+        f->offset = meta->size;  /* 当前字段的偏移量 */
+        
+        /* 计算字段大小 */
+        int field_size = 0;
+        switch (f->kind) {
+            case FIELD_INT:
+                field_size = 4;
+                break;
+            case FIELD_CHAR:
+                field_size = 4;
+                break;
+            case FIELD_PTR:
+                field_size = 4;
+                break;
+            case FIELD_STRUCT:
+                if (f->etc) {
+                    STRUCT_META *sm = (STRUCT_META *)f->etc;
+                    field_size = sm->size;
+                }
+                break;
+            case FIELD_ARRAY:
+                if (f->etc) {
+                    ARR_META *am = (ARR_META *)f->etc;
+                    field_size = am->total_elems * am->elem_size;
+                }
+                break;
+        }
+        
+        meta->size += field_size;
+        f = f->next;
+    }
+    
+    /* 添加到全局结构体符号表 */
+    meta->next = struct_tab;
+    struct_tab = meta;
+    
+    return meta;
+}
+
+/**
+ * 创建字段（支持数组）
+ */
+FIELD_META *create_field(char *name, int *dims, int ndims)
+{
+    FIELD_META *field = (FIELD_META *)malloc(sizeof(FIELD_META));
+    if (!field) {
+        fprintf(stderr, "ERROR: malloc failed for FIELD_META\n");
+        exit(1);
+    }
+    
+    // ✅ 修复：为 name 分配内存
+    field->name = strdup(name);
+    if (!field->name) {
+        fprintf(stderr, "ERROR: strdup failed for field name '%s'\n", name);
+        free(field);
+        exit(1);
+    }
+
+    field->kind = 0;  /* 待设置 */
+    field->offset = 0;
+    field->next = NULL;
+    
+    if (ndims > 0) {
+        /* 这是数组字段 */
+        field->kind = FIELD_ARRAY;
+        ARR_META *arr = (ARR_META *)malloc(sizeof(ARR_META));
+        arr->ndims = ndims;
+        arr->total_elems = 1;
+        
+        for (int i = 0; i < ndims; i++) {
+            arr->dims[i] = dims[i];
+            arr->total_elems *= dims[i];
+        }
+        
+        /* 计算 strides */
+        arr->strides[ndims - 1] = 1;
+        for (int i = ndims - 2; i >= 0; i--) {
+            arr->strides[i] = arr->strides[i + 1] * dims[i + 1];
+        }
+        
+        arr->elem_size = 4;  /* 默认 int，待更新 */
+        arr->elem_type = ELEM_INT;
+        arr->elem_meta = NULL;
+        
+        field->etc = arr;
+    } else {
+        field->etc = NULL;
+    }
+    
+    return field;
+}
+
+/**
+ * 创建指针字段
+ */
+FIELD_META *create_field_ptr(char *name)
+{
+    FIELD_META *field = (FIELD_META *)malloc(sizeof(FIELD_META));
+    field->name = strdup(name);
+    field->kind = FIELD_PTR;
+    field->offset = 0;
+    field->etc = NULL;
+    field->next = NULL;
+    return field;
+}
+
+/**
+ * 合并两个字段列表
+ */
+FIELD_META *append_fields(FIELD_META *list1, FIELD_META *list2)
+{
+    if (!list1) return list2;
+    if (!list2) return list1;
+    
+    FIELD_META *tail = list1;
+    while (tail->next) {
+        tail = tail->next;
+    }
+    tail->next = list2;
+    return list1;
+}
+
+/**
+ * 向列表追加字段（支持数组）
+ */
+FIELD_META *append_field_name(FIELD_META *list, char *name, int *dims, int ndims)
+{
+    FIELD_META *new_field = create_field(name, dims, ndims);
+    return append_fields(list, new_field);
+}
+
+/**
+ * 向列表追加指针字段
+ */
+FIELD_META *append_field_name_ptr(FIELD_META *list, char *name)
+{
+    FIELD_META *new_field = create_field_ptr(name);
+    return append_fields(list, new_field);
+}
+
+/**
+ * 设置字段类型（int/char）
+ */
+void set_field_type(FIELD_META *fields, int type)
+{
+    while (fields) {
+        if (fields->kind == FIELD_ARRAY) {
+            /* 更新数组元素类型 */
+            ARR_META *arr = (ARR_META *)fields->etc;
+            if (type == DT_INT) {
+                arr->elem_type = ELEM_INT;
+                arr->elem_size = 4;
+            } else if (type == DT_CHAR) {
+                arr->elem_type = ELEM_CHAR;
+                arr->elem_size = 1;
+            }
+        } else if (fields->kind == 0) {
+            /* 设置普通字段类型 */
+            if (type == DT_INT) {
+                fields->kind = FIELD_INT;
+            } else if (type == DT_CHAR) {
+                fields->kind = FIELD_CHAR;
+            }
+        }
+        fields = fields->next;
+    }
+}
+
+/**
+ * 设置字段为结构体类型
+ */
+void set_field_struct_type(FIELD_META *fields, char *struct_name)
+{
+    STRUCT_META *meta = lookup_struct(struct_name);
+    if (!meta) {
+        error("未定义的结构体类型: %s", struct_name);
+        return;
+    }
+    
+    while (fields) {
+        if (fields->kind == FIELD_ARRAY) {
+            /* 结构体数组 */
+            ARR_META *arr = (ARR_META *)fields->etc;
+            arr->elem_type = ELEM_STRUCT;
+            arr->elem_size = meta->size;
+            arr->elem_meta = meta;
+        } else if (fields->kind == 0) {
+            /* 普通结构体字段 */
+            fields->kind = FIELD_STRUCT;
+            fields->etc = meta;
+        }
+        fields = fields->next;
+    }
+}
+
+/**
+ * 查找结构体定义
+ */
+STRUCT_META *lookup_struct(char *name)
+{
+    STRUCT_META *meta = struct_tab;
+    while (meta) {
+        if (strcmp(meta->name, name) == 0) {
+            return meta;
+        }
+        meta = meta->next;
+    }
+    return NULL;
+}
+
+/**
+ * 查找结构体字段
+ */
+FIELD_META *find_field(STRUCT_META *meta, char *name)
+{
+    FIELD_META *f = meta->fields;
+    while (f) {
+        if (strcmp(f->name, name) == 0) {
+            return f;
+        }
+        f = f->next;
+    }
+    return NULL;
+}
+
+/**
+ * 声明结构体变量
+ */
+TAC *declare_struct_var(char *name, STRUCT_META *meta)
+{
+    SYM *var = (SYM *)malloc(sizeof(SYM));
+    var->type = SYM_VAR;
+    var->scope = scope;
+    var->dtype = DT_STRUCT;
+    var->name = strdup(name);
+    var->etc = meta;  /* 保存结构体元数据 */
+    
+    if (scope == SCOPE_GLOBAL) {
+        var->offset = 0;
+        var->next = sym_tab_global;
+        sym_tab_global = var;
+        return mk_tac(TAC_VAR, var, NULL, NULL);
+    } else {
+        var->offset = -(next_tmp++);
+        var->next = sym_tab_local;
+        sym_tab_local = var;
+        return mk_tac(TAC_VAR, var, NULL, NULL);
+    }
+}
+
+/**
+ * 声明结构体数组
+ */
+TAC *declare_struct_array(char *name, STRUCT_META *meta, int *dims, int ndims)
+{
+    SYM *var = (SYM *)malloc(sizeof(SYM));
+    var->type = SYM_VAR;
+    var->scope = scope;
+    var->dtype = DT_ARRAY;
+    var->name = strdup(name);
+    
+    /* 创建数组元数据 */
+    ARR_META *arr = (ARR_META *)malloc(sizeof(ARR_META));
+    arr->ndims = ndims;
+    arr->total_elems = 1;
+    
+    for (int i = 0; i < ndims; i++) {
+        arr->dims[i] = dims[i];
+        arr->total_elems *= dims[i];
+    }
+    
+    /* 计算 strides */
+    arr->strides[ndims - 1] = 1;
+    for (int i = ndims - 2; i >= 0; i--) {
+        arr->strides[i] = arr->strides[i + 1] * dims[i + 1];
+    }
+    
+    arr->elem_type = ELEM_STRUCT;
+    arr->elem_size = meta->size;
+    arr->elem_meta = meta;
+    
+    var->etc = arr;
+    
+    if (scope == SCOPE_GLOBAL) {
+        var->offset = 0;
+        var->next = sym_tab_global;
+        sym_tab_global = var;
+    } else {
+        var->offset = -(next_tmp++);
+        var->next = sym_tab_local;
+        sym_tab_local = var;
+    }
+    
+    return mk_tac(TAC_VAR, var, NULL, NULL);
+}
+
+/* ========================================
+ * 字段访问相关函数
+ * ======================================== */
+
+/**
+ * 创建字段访问链：var.field
+ */
+FIELD_ACCESS *create_field_access(char *var, char *field)
+{
+    FIELD_ACCESS *chain = (FIELD_ACCESS *)malloc(sizeof(FIELD_ACCESS));
+    chain->name = strdup(var);
+    chain->type = 0;  /* 变量名 */
+    chain->index = NULL;
+    chain->next = NULL;
+    
+    FIELD_ACCESS *access = (FIELD_ACCESS *)malloc(sizeof(FIELD_ACCESS));
+    access->name = strdup(field);
+    access->type = 0;  /* 字段访问 */
+    access->index = NULL;
+    access->next = NULL;
+    
+    chain->next = access;
+    return chain;
+}
+
+/**
+ * 创建字段访问链：var[idx].field
+ */
+FIELD_ACCESS *create_field_access_array(char *var, EXP *indices, char *field)
+{
+    FIELD_ACCESS *chain = (FIELD_ACCESS *)malloc(sizeof(FIELD_ACCESS));
+    strcpy(chain->name, var);
+    chain->type = 0;
+    chain->index = NULL;
+    chain->next = NULL;
+    
+    FIELD_ACCESS *arr_access = (FIELD_ACCESS *)malloc(sizeof(FIELD_ACCESS));
+    arr_access->name[0] = '\0';
+    arr_access->type = 1;  /* 数组索引 */
+    arr_access->index = indices;
+    arr_access->next = NULL;
+    
+    FIELD_ACCESS *field_access = (FIELD_ACCESS *)malloc(sizeof(FIELD_ACCESS));
+    strcpy(field_access->name, field);
+    field_access->type = 0;
+    field_access->index = NULL;
+    field_access->next = NULL;
+    
+    chain->next = arr_access;
+    arr_access->next = field_access;
+    
+    return chain;
+}
+
+/**
+ * 追加字段访问：chain.field
+ */
+FIELD_ACCESS *append_field_access(FIELD_ACCESS *chain, char *field)
+{
+    FIELD_ACCESS *access = (FIELD_ACCESS *)malloc(sizeof(FIELD_ACCESS));
+    access->name = strdup(field);
+    access->type = 0;
+    access->index = NULL;
+    access->next = NULL;
+    
+    FIELD_ACCESS *tail = chain;
+    while (tail->next) {
+        tail = tail->next;
+    }
+    tail->next = access;
+    
+    return chain;
+}
+
+/**
+ * 追加数组访问：chain[idx]
+ */
+FIELD_ACCESS *append_array_access(FIELD_ACCESS *chain, EXP *indices)
+{
+    FIELD_ACCESS *access = (FIELD_ACCESS *)malloc(sizeof(FIELD_ACCESS));
+    access->name = NULL;
+    access->type = 1;
+    access->index = indices;
+    access->next = NULL;
+    
+    FIELD_ACCESS *tail = chain;
+    while (tail->next) {
+        tail = tail->next;
+    }
+    tail->next = access;
+    
+    return chain;
+}
+
+/**
+ * 读取字段值：支持多层嵌套访问
+ * 例如：student.score、arr[i].name、nested.inner.value 等
+ */
+EXP *do_field_read(FIELD_ACCESS *chain)
+{
+    if (!chain) {
+        error("empty field access chain");
+        return mk_exp(NULL, NULL, NULL);
+    }
+    
+    /* 1. 查找基础变量 */
+    SYM *base_var = get_var(chain->name);
+    if (!base_var) {
+        error("变量 '%s' 未定义", chain->name);
+        return mk_exp(NULL, NULL, NULL);
+    }
+    
+    TAC *code = NULL;
+    SYM *current_addr = NULL;
+    STRUCT_META *current_struct = NULL;
+    void *current_meta = base_var->etc;  /* ARR_META 或 STRUCT_META */
+    int current_dtype = base_var->dtype;
+
+    if (current_dtype == DT_STRUCT) {
+        if (!current_meta) {
+            error("结构体变量 '%s' 的元数据为空", chain->name);
+            return mk_exp(NULL, NULL, NULL);
+        }
+        current_struct = (STRUCT_META *)current_meta;
+    }
+    
+    /* 2. 获取基础变量地址 */
+    current_addr = mk_tmp();
+    current_addr->dtype = DT_PTR;
+    
+    TAC *temp = mk_tac(TAC_VAR, current_addr, NULL, NULL);
+    code = temp;
+    
+    TAC *addr = mk_tac(TAC_ADDR, current_addr, base_var, NULL);
+    addr->prev = code;
+    code = addr;
+    
+    /* 3. 遍历访问链 */
+    FIELD_ACCESS *access = chain->next;
+    
+    while (access) {
+        if (access->type == 1) {
+            /* ========== 数组索引访问 ========== */
+            if (current_dtype != DT_ARRAY && current_dtype != DT_STRUCT) {
+                error("对非数组类型进行索引访问");
+                return mk_exp(NULL, NULL, NULL);
+            }
+            
+            ARR_META *arr_meta = NULL;
+            
+            if (current_dtype == DT_ARRAY) {
+                arr_meta = (ARR_META *)current_meta;
+            } else if (current_dtype == DT_STRUCT) {
+                /* 上一步应该已经处理为数组字段 */
+                error("结构体字段访问后不应直接索引");
+                return mk_exp(NULL, NULL, NULL);
+            }
+            
+            if (!arr_meta) {
+                error("数组元数据为空");
+                return mk_exp(NULL, NULL, NULL);
+            }
+            
+            /* 反转索引列表 */
+            EXP *indices = reverse_exp_list(access->index);
+            
+            /* 检查维度数量 */
+            int count = 0;
+            for (EXP *idx = indices; idx; idx = idx->next) count++;
+            
+            if (count != arr_meta->ndims) {
+                error("数组维度不匹配：需要 %d 维，提供了 %d 维", 
+                      arr_meta->ndims, count);
+                return mk_exp(NULL, NULL, NULL);
+            }
+            
+            /* 计算线性偏移 */
+            SYM *offset_sym = NULL;
+            EXP *idx = indices;
+            
+            for (int i = 0; i < arr_meta->ndims; i++, idx = idx->next) {
+                /* 串接索引表达式代码 */
+                code = join_tac(code, idx->tac);
+                
+                /* term = idx[i] * stride[i] */
+                SYM *stride_sym = mk_const(arr_meta->strides[i]);
+                SYM *term_sym = mk_tmp();
+                
+                temp = mk_tac(TAC_VAR, term_sym, NULL, NULL);
+                temp->prev = code;
+                code = temp;
+                
+                TAC *mul = mk_tac(TAC_MUL, term_sym, idx->ret, stride_sym);
+                mul->prev = code;
+                code = mul;
+                
+                /* 累加到总偏移 */
+                if (offset_sym == NULL) {
+                    offset_sym = term_sym;
+                } else {
+                    SYM *new_offset = mk_tmp();
+                    temp = mk_tac(TAC_VAR, new_offset, NULL, NULL);
+                    temp->prev = code;
+                    code = temp;
+                    
+                    TAC *add = mk_tac(TAC_ADD, new_offset, offset_sym, term_sym);
+                    add->prev = code;
+                    code = add;
+                    offset_sym = new_offset;
+                }
+            }
+            
+            /* 乘以元素大小 */
+            if (arr_meta->elem_size > 1) {
+                SYM *size_sym = mk_const(arr_meta->elem_size);
+                SYM *byte_offset = mk_tmp();
+                
+                temp = mk_tac(TAC_VAR, byte_offset, NULL, NULL);
+                temp->prev = code;
+                code = temp;
+                
+                TAC *mul = mk_tac(TAC_MUL, byte_offset, offset_sym, size_sym);
+                mul->prev = code;
+                code = mul;
+                offset_sym = byte_offset;
+            }
+            
+            /* 更新当前地址：current_addr += offset */
+            SYM *new_addr = mk_tmp();
+            new_addr->dtype = DT_PTR;
+            
+            temp = mk_tac(TAC_VAR, new_addr, NULL, NULL);
+            temp->prev = code;
+            code = temp;
+            
+            TAC *add = mk_tac(TAC_ADD, new_addr, current_addr, offset_sym);
+            add->prev = code;
+            code = add;
+            current_addr = new_addr;
+            
+            /* 更新当前类型和元数据 */
+            if (arr_meta->elem_type == ELEM_STRUCT) {
+                current_dtype = DT_STRUCT;
+                current_meta = arr_meta->elem_meta;
+                current_struct = (STRUCT_META *)current_meta;
+            } else {
+                current_dtype = (arr_meta->elem_type == ELEM_INT) ? DT_INT : DT_CHAR;
+                current_meta = NULL;
+                current_struct = NULL;
+            }
+            
+        } else {
+            /* ========== 字段访问 ========== */
+            if (current_dtype != DT_STRUCT) {
+                error("对非结构体类型访问字段 '%s'", access->name);
+                return mk_exp(NULL, NULL, NULL);
+            }
+            
+            if (!current_struct) {
+                error("结构体元数据为空");
+                return mk_exp(NULL, NULL, NULL);
+            }
+            
+            /* 查找字段 */
+            FIELD_META *field = find_field(current_struct, access->name);
+            if (!field) {
+                error("结构体 '%s' 中未找到字段 '%s'", 
+                      current_struct->name, access->name);
+                return mk_exp(NULL, NULL, NULL);
+            }
+            
+            /* 计算字段地址：current_addr + field->offset */
+            if (field->offset > 0) {
+                SYM *offset_sym = mk_const(field->offset);
+                SYM *new_addr = mk_tmp();
+                new_addr->dtype = DT_PTR;
+                
+                temp = mk_tac(TAC_VAR, new_addr, NULL, NULL);
+                temp->prev = code;
+                code = temp;
+                
+                TAC *add = mk_tac(TAC_ADD, new_addr, current_addr, offset_sym);
+                add->prev = code;
+                code = add;
+                current_addr = new_addr;
+            }
+            
+            /* 更新当前类型和元数据 */
+            switch (field->kind) {
+                case FIELD_INT:
+                    current_dtype = DT_INT;
+                    current_meta = NULL;
+                    current_struct = NULL;
+                    break;
+                    
+                case FIELD_CHAR:
+                    current_dtype = DT_CHAR;
+                    current_meta = NULL;
+                    current_struct = NULL;
+                    break;
+                    
+                case FIELD_PTR:
+                    current_dtype = DT_PTR;
+                    current_meta = NULL;
+                    current_struct = NULL;
+                    break;
+                    
+                case FIELD_STRUCT:
+                    current_dtype = DT_STRUCT;
+                    current_meta = field->etc;
+                    current_struct = (STRUCT_META *)current_meta;
+                    break;
+                    
+                case FIELD_ARRAY:
+                    current_dtype = DT_ARRAY;
+                    current_meta = field->etc;
+                    current_struct = NULL;
+                    break;
+                    
+                default:
+                    error("未知字段类型");
+                    return mk_exp(NULL, NULL, NULL);
+            }
+        }
+        
+        access = access->next;
+    }
+    
+    /* 4. 读取最终值 */
+    SYM *result = mk_tmp();
+    result->dtype = current_dtype;
+    
+    temp = mk_tac(TAC_VAR, result, NULL, NULL);
+    temp->prev = code;
+    code = temp;
+    
+    TAC *read = mk_tac(TAC_DEREF_R, result, current_addr, NULL);
+    read->prev = code;
+    code = read;
+    
+    return mk_exp(NULL, result, code);
+}
+
+/**
+ * 写入字段值：支持多层嵌套访问
+ * 例如：student.score = 90、arr[i].name = "Tom" 等
+ */
+TAC *do_field_write(FIELD_ACCESS *chain, EXP *val)
+{
+    if (!chain) {
+        error("empty field access chain");
+        return NULL;
+    }
+    
+    /* 1. 查找基础变量 */
+    SYM *base_var = get_var(chain->name);
+    if (!base_var) {
+        error("变量 '%s' 未定义", chain->name);
+        return NULL;
+    }
+    
+    TAC *code = NULL;
+    SYM *current_addr = NULL;
+    STRUCT_META *current_struct = NULL;
+    void *current_meta = base_var->etc;
+    int current_dtype = base_var->dtype;
+
+    if (current_dtype == DT_STRUCT) {
+        if (!current_meta) {
+            error("结构体变量 '%s' 的元数据为空", chain->name);
+            return NULL;
+        }
+        current_struct = (STRUCT_META *)current_meta;
+    }
+    
+    /* 2. 获取基础变量地址 */
+    current_addr = mk_tmp();
+    current_addr->dtype = DT_PTR;
+    
+    TAC *temp = mk_tac(TAC_VAR, current_addr, NULL, NULL);
+    code = temp;
+    
+    TAC *addr = mk_tac(TAC_ADDR, current_addr, base_var, NULL);
+    addr->prev = code;
+    code = addr;
+    
+    /* 3. 遍历访问链（与 read 相同的逻辑） */
+    FIELD_ACCESS *access = chain->next;
+    
+    while (access) {
+        if (access->type == 1) {
+            /* ========== 数组索引访问 ========== */
+            if (current_dtype != DT_ARRAY && current_dtype != DT_STRUCT) {
+                error("对非数组类型进行索引访问");
+                return NULL;
+            }
+            
+            ARR_META *arr_meta = (ARR_META *)current_meta;
+            if (!arr_meta) {
+                error("数组元数据为空");
+                return NULL;
+            }
+            
+            /* 反转索引列表 */
+            EXP *indices = reverse_exp_list(access->index);
+            
+            /* 检查维度 */
+            int count = 0;
+            for (EXP *idx = indices; idx; idx = idx->next) count++;
+            
+            if (count != arr_meta->ndims) {
+                error("数组维度不匹配");
+                return NULL;
+            }
+            
+            /* 计算线性偏移 */
+            SYM *offset_sym = NULL;
+            EXP *idx = indices;
+            
+            for (int i = 0; i < arr_meta->ndims; i++, idx = idx->next) {
+                code = join_tac(code, idx->tac);
+                
+                SYM *stride_sym = mk_const(arr_meta->strides[i]);
+                SYM *term_sym = mk_tmp();
+                
+                temp = mk_tac(TAC_VAR, term_sym, NULL, NULL);
+                temp->prev = code;
+                code = temp;
+                
+                TAC *mul = mk_tac(TAC_MUL, term_sym, idx->ret, stride_sym);
+                mul->prev = code;
+                code = mul;
+                
+                if (offset_sym == NULL) {
+                    offset_sym = term_sym;
+                } else {
+                    SYM *new_offset = mk_tmp();
+                    temp = mk_tac(TAC_VAR, new_offset, NULL, NULL);
+                    temp->prev = code;
+                    code = temp;
+                    
+                    TAC *add = mk_tac(TAC_ADD, new_offset, offset_sym, term_sym);
+                    add->prev = code;
+                    code = add;
+                    offset_sym = new_offset;
+                }
+            }
+            
+            /* 乘以元素大小 */
+            if (arr_meta->elem_size > 1) {
+                SYM *size_sym = mk_const(arr_meta->elem_size);
+                SYM *byte_offset = mk_tmp();
+                
+                temp = mk_tac(TAC_VAR, byte_offset, NULL, NULL);
+                temp->prev = code;
+                code = temp;
+                
+                TAC *mul = mk_tac(TAC_MUL, byte_offset, offset_sym, size_sym);
+                mul->prev = code;
+                code = mul;
+                offset_sym = byte_offset;
+            }
+            
+            /* 更新地址 */
+            SYM *new_addr = mk_tmp();
+            new_addr->dtype = DT_PTR;
+            
+            temp = mk_tac(TAC_VAR, new_addr, NULL, NULL);
+            temp->prev = code;
+            code = temp;
+            
+            TAC *add = mk_tac(TAC_ADD, new_addr, current_addr, offset_sym);
+            add->prev = code;
+            code = add;
+            current_addr = new_addr;
+            
+            /* 更新类型 */
+            if (arr_meta->elem_type == ELEM_STRUCT) {
+                current_dtype = DT_STRUCT;
+                current_meta = arr_meta->elem_meta;
+                current_struct = (STRUCT_META *)current_meta;
+            } else {
+                current_dtype = (arr_meta->elem_type == ELEM_INT) ? DT_INT : DT_CHAR;
+                current_meta = NULL;
+                current_struct = NULL;
+            }
+            
+        } else {
+            /* ========== 字段访问 ========== */
+            if (current_dtype != DT_STRUCT) {
+                error("对非结构体类型访问字段 '%s'", access->name);
+                return NULL;
+            }
+            
+            if (!current_struct) {
+                error("结构体元数据为空");
+                return NULL;
+            }
+            
+            FIELD_META *field = find_field(current_struct, access->name);
+            if (!field) {
+                error("结构体中未找到字段 '%s'", access->name);
+                return NULL;
+            }
+            
+            /* 计算字段偏移 */
+            if (field->offset > 0) {
+                SYM *offset_sym = mk_const(field->offset);
+                SYM *new_addr = mk_tmp();
+                new_addr->dtype = DT_PTR;
+                
+                temp = mk_tac(TAC_VAR, new_addr, NULL, NULL);
+                temp->prev = code;
+                code = temp;
+                
+                TAC *add = mk_tac(TAC_ADD, new_addr, current_addr, offset_sym);
+                add->prev = code;
+                code = add;
+                current_addr = new_addr;
+            }
+            
+            /* 更新类型 */
+            switch (field->kind) {
+                case FIELD_INT:
+                    current_dtype = DT_INT;
+                    current_meta = NULL;
+                    current_struct = NULL;
+                    break;
+                case FIELD_CHAR:
+                    current_dtype = DT_CHAR;
+                    current_meta = NULL;
+                    current_struct = NULL;
+                    break;
+                case FIELD_PTR:
+                    current_dtype = DT_PTR;
+                    current_meta = NULL;
+                    current_struct = NULL;
+                    break;
+                case FIELD_STRUCT:
+                    current_dtype = DT_STRUCT;
+                    current_meta = field->etc;
+                    current_struct = (STRUCT_META *)current_meta;
+                    break;
+                case FIELD_ARRAY:
+                    current_dtype = DT_ARRAY;
+                    current_meta = field->etc;
+                    current_struct = NULL;
+                    break;
+                default:
+                    error("未知字段类型");
+                    return NULL;
+            }
+        }
+        
+        access = access->next;
+    }
+    
+    /* 4. 写入值 */
+    code = join_tac(code, val->tac);
+    
+    TAC *write = mk_tac(TAC_DEREF_W, current_addr, val->ret, NULL);
+    write->prev = code;
+    
+    return write;
+}
+
+/* ========================================
+ * 辅助函数
+ * ======================================== */
+
+/**
+ * 判断是否为数组
+ */
+int is_array(SYM *s)
+{
+    return s && s->dtype == DT_ARRAY;
+}
+
+/**
+ * 判断是否为结构体
+ */
+int is_struct(SYM *s)
+{
+    return s && s->dtype == DT_STRUCT;
+}
+
+/**
+ * 判断是否为结构体数组
+ */
+int is_struct_array(SYM *s)
+{
+    if (!is_array(s)) return 0;
+    ARR_META *arr = (ARR_META *)s->etc;
+    return arr && arr->elem_type == ELEM_STRUCT;
+}
+
+/**
+ * 获取类型大小
+ */
+int get_type_size(SYM *s)
+{
+    switch (s->dtype) {
+        case DT_INT: return 4;
+        case DT_CHAR: return 1;
+        case DT_PTR: return 4;
+        case DT_STRUCT:
+            if (s->etc) {
+                return get_struct_size((STRUCT_META *)s->etc);
+            }
+            return 0;
+        case DT_ARRAY:
+            if (s->etc) {
+                return get_array_size((ARR_META *)s->etc);
+            }
+            return 0;
+        default: return 0;
+    }
+}
+
+/**
+ * 获取结构体大小
+ */
+int get_struct_size(STRUCT_META *meta)
+{
+    return meta ? meta->size : 0;
+}
+
+/**
+ * 获取数组大小
+ */
+int get_array_size(ARR_META *arr)
+{
+    return arr ? arr->total_elems * arr->elem_size : 0;
+}
+
+/**
+ * 反转字段访问链
+ */
+FIELD_ACCESS *reverse_field_access(FIELD_ACCESS *chain)
+{
+    FIELD_ACCESS *prev = NULL;
+    FIELD_ACCESS *current = chain;
+    FIELD_ACCESS *next = NULL;
+    
+    while (current) {
+        next = current->next;
+        current->next = prev;
+        prev = current;
+        current = next;
+    }
+    
+    return prev;
+}
+
+/**
+ * 反转表达式列表
+ */
+EXP *reverse_exp_list(EXP *list)
+{
+    EXP *prev = NULL;
+    EXP *current = list;
+    EXP *next = NULL;
+    
+    while (current) {
+        next = current->next;
+        current->next = prev;
+        prev = current;
+        current = next;
+    }
+    
+    return prev;
 }

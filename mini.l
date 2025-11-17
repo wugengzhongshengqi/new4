@@ -10,6 +10,7 @@
 
 "int"  {  return INT;  }
 "char" {  return CHAR; }
+"struct" {  return STRUCT;  }
 
 "input"  {  return INPUT;  }
 
@@ -67,6 +68,8 @@
 ">="  {  return GE;  }
 
 ">"  {  return GT;  }
+
+"."   {  return DOT;  }
 
 [ \t\r\n]|#.*
 
