@@ -485,6 +485,12 @@ void asm_code(TAC *c)
 
 		case TAC_CALL:
 		asm_call(c->a, c->b);
+
+		if (c->a != NULL) {  /* 有返回值的调用 */
+			int r = reg_alloc(c->a);  /* 分配寄存器给返回值 */
+			out_str(file_s, "\tLOD R%u,R%u\n", r, R_TP);  /* R_r = R_TP */
+			rdesc_fill(r, c->a, MODIFIED);  /* 更新寄存器描述符 */
+		}
 		return;
 
 		case TAC_BEGINFUNC:
@@ -582,9 +588,19 @@ void asm_code(TAC *c)
 
 		case TAC_DEREF_W:
 		{
+			for(int r=R_GEN; r < R_NUM; r++) {
+        		asm_write_back(r);
+    		}
+
 			int rp = reg_alloc(c->a);
 			int rv = reg_alloc_exclude(c->b, rp);
 			out_str(file_s, "\tSTO (R%u),R%u\n", rp, rv);
+
+			for(int r=R_GEN; r < R_NUM; r++) {
+				if(rdesc[r].var && rdesc[r].var->type == SYM_VAR) {
+					rdesc_clear(r);
+				}
+			}
 			return;
 		}
 
@@ -608,6 +624,9 @@ void asm_code(TAC *c)
 		}
 		case TAC_FIELD_WRITE:
 		{
+			for(int r=R_GEN; r < R_NUM; r++) {
+				asm_write_back(r);
+			}
 			/* 结构体字段写入：base.field = src */
 			FIELD_INFO *info = (FIELD_INFO *)c->c;  /* 字段信息 */
 			int r_base = reg_alloc(c->a);            /* 基地址 */
@@ -621,6 +640,12 @@ void asm_code(TAC *c)
 			}
 			
 			out_str(file_s, "\tSTO (R%u),R%u\n", r_addr, r_src);
+
+			for(int r=R_GEN; r < R_NUM; r++) {
+				if(rdesc[r].var && rdesc[r].var->type == SYM_VAR) {
+					rdesc_clear(r);
+				}
+			}
 			
 			return;
 		}

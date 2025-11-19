@@ -258,6 +258,7 @@ SYM *declare_func(char *name)
     sym->name=name;
     sym->address=NULL;
 
+    sym->dtype=decl_dtype;
     insert_sym(&sym_tab_global,sym);
     return sym;
 }

@@ -42,10 +42,10 @@ L1:
 	JMP R3
 	LOD R5,1
 
-	# ifz t0 goto L2
+	# ifz t0 goto L3
 	STO (R2+56),R5
 	TST R5
-	JEZ L2
+	JEZ L3
 
 	# var t1
 
@@ -102,24 +102,24 @@ L1:
 	STO (R2+12),R12
 	JMP L1
 
-	# label L2
-L2:
+	# label L3
+L3:
 
-	# ifz 0 goto L4
+	# ifz 0 goto L5
 	LOD R5,0
 	TST R5
-	JEZ L4
+	JEZ L5
 
-	# output L3
-	LOD R6,L3
+	# output L4
+	LOD R6,L4
 	LOD R15,R6
 	OTS
 
-	# label L4
-L4:
-
 	# label L5
 L5:
+
+	# label L6
+L6:
 
 	# var t7
 
@@ -135,10 +135,10 @@ L5:
 	JMP R3
 	LOD R5,1
 
-	# ifz t7 goto L6
+	# ifz t7 goto L8
 	STO (R2+84),R5
 	TST R5
-	JEZ L6
+	JEZ L8
 
 	# var t8
 
@@ -192,19 +192,19 @@ L5:
 	LOD R15,R11
 	OTI
 
-	# output L3
-	LOD R12,L3
+	# output L4
+	LOD R12,L4
 	LOD R15,R12
 	OTS
 
-	# goto L5
-	JMP L5
+	# goto L6
+	JMP L6
 
-	# label L6
-L6:
+	# label L8
+L8:
 
-	# output L3
-	LOD R5,L3
+	# output L4
+	LOD R5,L4
 	LOD R15,R5
 	OTS
 
@@ -216,7 +216,7 @@ L6:
 	# tail
 EXIT:
 	END
-L3:
+L4:
 	DBS 10,0
 STATIC:
 	DBN 0,0

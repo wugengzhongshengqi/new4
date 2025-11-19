@@ -92,20 +92,23 @@ L2:
 	# *pa = 65
 	STO (R2+12),R10
 	LOD R11,65
-	STC (R10),R11
+	STO (R10),R11
 
 	# output a
+	LOD R5,(R2+8)
 	LOD R15,R5
 	OTC
 
 	# ptr = pa
+	LOD R6,(R2+12)
 
 	# *ptr = 66
-	STO (R2+28),R10
-	LOD R12,66
-	STC (R10),R12
+	STO (R2+28),R6
+	LOD R7,66
+	STO (R6),R7
 
 	# output a
+	LOD R5,(R2+8)
 	LOD R15,R5
 	OTC
 

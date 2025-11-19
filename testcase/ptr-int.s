@@ -97,18 +97,21 @@ main:
 	STO (R13),R14
 
 	# output a
-	LOD R15,R9
+	LOD R5,(R2+8)
+	LOD R15,R5
 	OTI
 
 	# ptr = pa
+	LOD R9,(R2+12)
 
 	# *ptr = 222
-	STO (R2+28),R13
-	LOD R15,222
-	STO (R13),R15
+	STO (R2+28),R9
+	LOD R10,222
+	STO (R9),R10
 
 	# output a
-	LOD R15,R9
+	LOD R5,(R2+8)
+	LOD R15,R5
 	OTI
 
 	# output L1

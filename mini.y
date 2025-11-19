@@ -22,6 +22,7 @@ void yyerror(char* msg);
     SYM *sym;
     TAC *tac;
     EXP	*exp;
+	int dtype;
 	struct {
 		int dims[16];
 		int ndims;
@@ -69,8 +70,26 @@ void yyerror(char* msg);
 %type <tac> default_opt
 %type <tac> for_statement for_init for_iter
 %type <exp> for_cond
+%type <dtype> type_spec
+%type <tac> parameter_list_typed
 
+%start program
 %%
+
+/* ========== 类型说明符 ========== */
+
+/* type_spec：设置全局 decl_dtype */
+type_spec : INT
+{
+    decl_dtype = DT_INT;
+    $$ = DT_INT;
+}
+| CHAR
+{
+    decl_dtype = DT_CHAR;
+    $$ = DT_CHAR;
+}
+;
 
 /* 程序由若干函数/声明组成，完成后反转并得到首指针 */
 /* program：整个编译单元的入口，完成 TAC 的链反转以便后续遍历 */
@@ -170,13 +189,10 @@ field_declarators : IDENTIFIER
 
 /* 变量/指针声明，影响后续变量 dtype（int/char） */
 /* declaration：设置当前声明的数据类型并生成对应变量/指针的 TAC */
-declaration : INT { decl_dtype=DT_INT; } variable_list ';'
+declaration : type_spec variable_list ';'
 {
-    $$=$3;
-}
-| CHAR { decl_dtype=DT_CHAR; } variable_list ';'
-{
-    $$=$3;
+    decl_dtype = $1;
+    $$ = $2;
 }
 | STRUCT IDENTIFIER
 {
@@ -249,7 +265,14 @@ array_dimensions : '[' INTEGER ']'
 
 /* 函数定义：进入局部作用域，参数与块体合并为函数体 */
 /* function：函数定义，进入局部作用域，参数与块体拼接为函数体 */
-function : function_head '(' parameter_list ')' block
+function : type_spec function_head '(' parameter_list_typed ')' block
+{
+    /* 带返回类型的函数 */
+    $$=do_func($2, $4, $6);
+    scope=0; /* Leave local scope. */
+    sym_tab_local=NULL; /* Clear local symbol table. */
+}
+| function_head '(' parameter_list ')' block
 {
 	$$=do_func($1, $3, $5);
 	scope=0; /* Leave local scope. */
@@ -285,6 +308,20 @@ parameter_list : IDENTIFIER
 |
 {
 	$$=NULL;
+}
+;
+
+parameter_list_typed : /* empty */
+{
+    $$=NULL;
+}
+| type_spec IDENTIFIER
+{
+    $$=declare_para($2);
+}
+| parameter_list_typed ',' type_spec IDENTIFIER
+{
+    $$=join_tac($1, declare_para($4));
 }
 ;
 

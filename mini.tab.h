@@ -78,10 +78,12 @@ extern int yydebug;
     CASE = 279,                    /* CASE  */
     DEFAULT = 280,                 /* DEFAULT  */
     BREAK = 281,                   /* BREAK  */
-    INTEGER = 282,                 /* INTEGER  */
-    IDENTIFIER = 283,              /* IDENTIFIER  */
-    TEXT = 284,                    /* TEXT  */
-    CHARACTER = 285                /* CHARACTER  */
+    FOR = 282,                     /* FOR  */
+    CONTINUE = 283,                /* CONTINUE  */
+    INTEGER = 284,                 /* INTEGER  */
+    IDENTIFIER = 285,              /* IDENTIFIER  */
+    TEXT = 286,                    /* TEXT  */
+    CHARACTER = 287                /* CHARACTER  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -97,6 +99,7 @@ union YYSTYPE
     SYM *sym;
     TAC *tac;
     EXP	*exp;
+	int dtype;
 	struct {
 		int dims[16];
 		int ndims;
@@ -108,7 +111,7 @@ union YYSTYPE
 	} field_chain;
 	void *case_list;
 
-#line 112 "mini.tab.h"
+#line 115 "mini.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

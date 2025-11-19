@@ -1,0 +1,4849 @@
+Terminals unused in grammar
+
+    FUNC
+
+
+State 2 conflicts: 1 reduce/reduce
+State 3 conflicts: 1 reduce/reduce
+
+
+Grammar
+
+    0 $accept: program $end
+
+    1 type_spec: INT
+    2          | CHAR
+
+    3 program: function_declaration_list
+
+    4 function_declaration_list: function_declaration
+    5                          | function_declaration_list function_declaration
+
+    6 function_declaration: function
+    7                     | declaration
+    8                     | struct_definition
+
+    9 struct_definition: STRUCT IDENTIFIER '{' field_list '}' ';'
+
+   10 field_list: INT field_declarators ';'
+   11           | CHAR field_declarators ';'
+   12           | STRUCT IDENTIFIER field_declarators ';'
+   13           | field_list INT field_declarators ';'
+   14           | field_list CHAR field_declarators ';'
+   15           | field_list STRUCT IDENTIFIER field_declarators ';'
+
+   16 field_declarators: IDENTIFIER
+   17                  | '*' IDENTIFIER
+   18                  | IDENTIFIER array_dimensions
+   19                  | field_declarators ',' IDENTIFIER
+   20                  | field_declarators ',' '*' IDENTIFIER
+   21                  | field_declarators ',' IDENTIFIER array_dimensions
+
+   22 $@1: ε
+
+   23 declaration: INT $@1 variable_list ';'
+
+   24 $@2: ε
+
+   25 declaration: CHAR $@2 variable_list ';'
+
+   26 $@3: ε
+
+   27 declaration: STRUCT IDENTIFIER $@3 struct_var_list ';'
+
+   28 struct_var_list: struct_var_declaration
+   29                | struct_var_list ',' struct_var_declaration
+
+   30 struct_var_declaration: IDENTIFIER
+   31                       | IDENTIFIER array_dimensions
+
+   32 variable_list: variable_declaration
+   33              | variable_list ',' variable_declaration
+
+   34 variable_declaration: IDENTIFIER
+   35                     | '*' IDENTIFIER
+   36                     | IDENTIFIER array_dimensions
+
+   37 array_dimensions: '[' INTEGER ']'
+   38                 | array_dimensions '[' INTEGER ']'
+
+   39 function: type_spec function_head '(' parameter_list_typed ')' block
+   40         | function_head '(' parameter_list ')' block
+   41         | error
+
+   42 function_head: IDENTIFIER
+
+   43 parameter_list: IDENTIFIER
+   44               | parameter_list ',' IDENTIFIER
+   45               | ε
+
+   46 parameter_list_typed: ε
+   47                     | type_spec IDENTIFIER
+   48                     | parameter_list_typed ',' type_spec IDENTIFIER
+
+   49 statement: assignment_statement ';'
+   50          | input_statement ';'
+   51          | output_statement ';'
+   52          | call_statement ';'
+   53          | return_statement ';'
+   54          | if_statement
+   55          | while_statement
+   56          | for_statement
+   57          | switch_statement
+   58          | BREAK ';'
+   59          | CONTINUE ';'
+   60          | block
+   61          | error
+
+   62 block: '{' declaration_list statement_list '}'
+
+   63 declaration_list: ε
+   64                 | declaration_list declaration
+
+   65 statement_list: ε
+   66               | statement_list statement
+
+   67 assignment_statement: IDENTIFIER '=' expression
+   68                     | '*' IDENTIFIER '=' expression
+   69                     | IDENTIFIER index_list '=' expression
+   70                     | field_access '=' expression
+
+   71 field_access: IDENTIFIER DOT IDENTIFIER
+   72             | IDENTIFIER index_list DOT IDENTIFIER
+   73             | field_access DOT IDENTIFIER
+   74             | field_access '[' expression ']'
+
+   75 expression: expression '+' expression
+   76           | expression '-' expression
+   77           | expression '*' expression
+   78           | expression '/' expression
+   79           | '-' expression
+   80           | expression EQ expression
+   81           | expression NE expression
+   82           | expression LT expression
+   83           | expression LE expression
+   84           | expression GT expression
+   85           | expression GE expression
+   86           | '(' expression ')'
+   87           | INTEGER
+   88           | CHARACTER
+   89           | '&' IDENTIFIER
+   90           | '&' field_access
+   91           | '*' expression
+   92           | IDENTIFIER
+   93           | IDENTIFIER index_list
+   94           | field_access
+   95           | call_expression
+   96           | error
+
+   97 argument_list: ε
+   98              | expression_list
+
+   99 expression_list: expression
+  100                | expression_list ',' expression
+
+  101 input_statement: INPUT IDENTIFIER
+
+  102 output_statement: OUTPUT IDENTIFIER
+  103                 | OUTPUT TEXT
+
+  104 return_statement: RETURN expression
+
+  105 if_statement: IF '(' expression ')' block
+  106             | IF '(' expression ')' block ELSE block
+
+  107 $@4: ε
+
+  108 while_statement: WHILE '(' expression ')' $@4 block
+
+  109 call_statement: IDENTIFIER '(' argument_list ')'
+
+  110 call_expression: IDENTIFIER '(' argument_list ')'
+
+  111 index_list: '[' expression ']'
+  112           | index_list '[' expression ']'
+
+  113 @5: ε
+
+  114 switch_statement: SWITCH '(' expression ')' @5 '{' case_list_opt default_opt '}'
+
+  115 case_list_opt: ε
+  116              | case_list
+
+  117 case_list: case_clause
+  118          | case_list case_clause
+
+  119 case_clause: CASE INTEGER ':' statement_list
+
+  120 default_opt: ε
+  121            | DEFAULT ':' statement_list
+
+  122 $@6: ε
+
+  123 for_statement: FOR '(' for_init ';' for_cond ';' for_iter ')' $@6 block
+
+  124 for_init: ε
+  125         | IDENTIFIER '=' expression
+  126         | expression
+
+  127 for_cond: ε
+  128         | expression
+
+  129 for_iter: ε
+  130         | IDENTIFIER '=' expression
+  131         | expression
+
+
+Terminals, with rules where they appear
+
+    $end (0) 0
+    '&' (38) 89 90
+    '(' (40) 39 40 86 105 106 108 109 110 114 123
+    ')' (41) 39 40 86 105 106 108 109 110 114 123
+    '*' (42) 17 20 35 68 77 91
+    '+' (43) 75
+    ',' (44) 19 20 21 29 33 44 48 100
+    '-' (45) 76 79
+    '/' (47) 78
+    ':' (58) 119 121
+    ';' (59) 9 10 11 12 13 14 15 23 25 27 49 50 51 52 53 58 59 123
+    '=' (61) 67 68 69 70 125 130
+    '[' (91) 37 38 74 111 112
+    ']' (93) 37 38 74 111 112
+    '{' (123) 9 62 114
+    '}' (125) 9 62 114
+    error (256) 41 61 96
+    INT (258) 1 10 13 23
+    CHAR (259) 2 11 14 25
+    STRUCT (260) 9 12 15 27
+    DOT (261) 71 72 73
+    EQ (262) 80
+    NE (263) 81
+    LT (264) 82
+    LE (265) 83
+    GT (266) 84
+    GE (267) 85
+    UMINUS (268)
+    UADDR (269)
+    UDEREF (270)
+    IF (271) 105 106
+    ELSE (272) 106
+    WHILE (273) 108
+    FUNC (274)
+    INPUT (275) 101
+    OUTPUT (276) 102 103
+    RETURN (277) 104
+    SWITCH (278) 114
+    CASE (279) 119
+    DEFAULT (280) 121
+    BREAK (281) 58
+    FOR (282) 123
+    CONTINUE (283) 59
+    INTEGER <string> (284) 37 38 87 119
+    IDENTIFIER <string> (285) 9 12 15 16 17 18 19 20 21 27 30 31 34 35 36 42 43 44 47 48 67 68 69 71 72 73 89 92 93 101 102 109 110 125 130
+    TEXT <string> (286) 103
+    CHARACTER <character> (287) 88
+
+
+Nonterminals, with rules where they appear
+
+    $accept (48)
+        on left: 0
+    type_spec <dtype> (49)
+        on left: 1 2
+        on right: 39 47 48
+    program <tac> (50)
+        on left: 3
+        on right: 0
+    function_declaration_list <tac> (51)
+        on left: 4 5
+        on right: 3 5
+    function_declaration <tac> (52)
+        on left: 6 7 8
+        on right: 4 5
+    struct_definition <meta> (53)
+        on left: 9
+        on right: 8
+    field_list <meta> (54)
+        on left: 10 11 12 13 14 15
+        on right: 9 13 14 15
+    field_declarators <meta> (55)
+        on left: 16 17 18 19 20 21
+        on right: 10 11 12 13 14 15 19 20 21
+    declaration <tac> (56)
+        on left: 23 25 27
+        on right: 7 64
+    $@1 (57)
+        on left: 22
+        on right: 23
+    $@2 (58)
+        on left: 24
+        on right: 25
+    $@3 (59)
+        on left: 26
+        on right: 27
+    struct_var_list <tac> (60)
+        on left: 28 29
+        on right: 27 29
+    struct_var_declaration <tac> (61)
+        on left: 30 31
+        on right: 28 29
+    variable_list <tac> (62)
+        on left: 32 33
+        on right: 23 25 33
+    variable_declaration <tac> (63)
+        on left: 34 35 36
+        on right: 32 33
+    array_dimensions <arr_dims> (64)
+        on left: 37 38
+        on right: 18 21 31 36 38
+    function <tac> (65)
+        on left: 39 40 41
+        on right: 6
+    function_head <sym> (66)
+        on left: 42
+        on right: 39 40
+    parameter_list <tac> (67)
+        on left: 43 44 45
+        on right: 40 44
+    parameter_list_typed <tac> (68)
+        on left: 46 47 48
+        on right: 39 48
+    statement <tac> (69)
+        on left: 49 50 51 52 53 54 55 56 57 58 59 60 61
+        on right: 66
+    block <tac> (70)
+        on left: 62
+        on right: 39 40 60 105 106 108 123
+    declaration_list <tac> (71)
+        on left: 63 64
+        on right: 62 64
+    statement_list <tac> (72)
+        on left: 65 66
+        on right: 62 66 119 121
+    assignment_statement <tac> (73)
+        on left: 67 68 69 70
+        on right: 49
+    field_access <field_chain> (74)
+        on left: 71 72 73 74
+        on right: 70 73 74 90 94
+    expression <exp> (75)
+        on left: 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96
+        on right: 67 68 69 70 74 75 76 77 78 79 80 81 82 83 84 85 86 91 99 100 104 105 106 108 111 112 114 125 126 128 130 131
+    argument_list <exp> (76)
+        on left: 97 98
+        on right: 109 110
+    expression_list <exp> (77)
+        on left: 99 100
+        on right: 98 100
+    input_statement <tac> (78)
+        on left: 101
+        on right: 50
+    output_statement <tac> (79)
+        on left: 102 103
+        on right: 51
+    return_statement <tac> (80)
+        on left: 104
+        on right: 53
+    if_statement <tac> (81)
+        on left: 105 106
+        on right: 54
+    while_statement <tac> (82)
+        on left: 108
+        on right: 55
+    $@4 (83)
+        on left: 107
+        on right: 108
+    call_statement <tac> (84)
+        on left: 109
+        on right: 52
+    call_expression <exp> (85)
+        on left: 110
+        on right: 95
+    index_list <exp_list> (86)
+        on left: 111 112
+        on right: 69 72 93 112
+    switch_statement <tac> (87)
+        on left: 114
+        on right: 57
+    @5 (88)
+        on left: 113
+        on right: 114
+    case_list_opt <case_list> (89)
+        on left: 115 116
+        on right: 114
+    case_list <case_list> (90)
+        on left: 117 118
+        on right: 116 118
+    case_clause <case_list> (91)
+        on left: 119
+        on right: 117 118
+    default_opt <tac> (92)
+        on left: 120 121
+        on right: 114
+    for_statement <tac> (93)
+        on left: 123
+        on right: 56
+    $@6 (94)
+        on left: 122
+        on right: 123
+    for_init <tac> (95)
+        on left: 124 125 126
+        on right: 123
+    for_cond <exp> (96)
+        on left: 127 128
+        on right: 123
+    for_iter <tac> (97)
+        on left: 129 130 131
+        on right: 123
+
+
+State 0
+
+    0 $accept: • program $end
+    1 type_spec: • INT
+    2          | • CHAR
+    3 program: • function_declaration_list
+    4 function_declaration_list: • function_declaration
+    5                          | • function_declaration_list function_declaration
+    6 function_declaration: • function
+    7                     | • declaration
+    8                     | • struct_definition
+    9 struct_definition: • STRUCT IDENTIFIER '{' field_list '}' ';'
+   23 declaration: • INT $@1 variable_list ';'
+   25            | • CHAR $@2 variable_list ';'
+   27            | • STRUCT IDENTIFIER $@3 struct_var_list ';'
+   39 function: • type_spec function_head '(' parameter_list_typed ')' block
+   40         | • function_head '(' parameter_list ')' block
+   41         | • error
+   42 function_head: • IDENTIFIER
+
+    error       shift, and go to state 1
+    INT         shift, and go to state 2
+    CHAR        shift, and go to state 3
+    STRUCT      shift, and go to state 4
+    IDENTIFIER  shift, and go to state 5
+
+    type_spec                  go to state 6
+    program                    go to state 7
+    function_declaration_list  go to state 8
+    function_declaration       go to state 9
+    struct_definition          go to state 10
+    declaration                go to state 11
+    function                   go to state 12
+    function_head              go to state 13
+
+
+State 1
+
+   41 function: error •
+
+    $default  reduce using rule 41 (function)
+
+
+State 2
+
+    1 type_spec: INT •  [IDENTIFIER]
+   22 $@1: ε •  [IDENTIFIER, '*']
+   23 declaration: INT • $@1 variable_list ';'
+
+    IDENTIFIER  reduce using rule 1 (type_spec)
+    IDENTIFIER  [reduce using rule 22 ($@1)]
+    '*'         reduce using rule 22 ($@1)
+    $default    reduce using rule 1 (type_spec)
+
+    $@1  go to state 14
+
+    reduce/reduce conflict on token IDENTIFIER:
+        1 type_spec: INT •
+       22 $@1: ε •
+      First example: INT • IDENTIFIER '(' parameter_list_typed ')' block $end
+      First reduce derivation
+        $accept
+        ↳ 0: program                                                                             $end
+             ↳ 3: function_declaration_list
+                  ↳ 4: function_declaration
+                       ↳ 6: function
+                            ↳ 39: type_spec  function_head    '(' parameter_list_typed ')' block
+                                  ↳ 1: INT • ↳ 42: IDENTIFIER
+      Second example: INT • IDENTIFIER ';' $end
+      Second reduce derivation
+        $accept
+        ↳ 0: program                                                           $end
+             ↳ 3: function_declaration_list
+                  ↳ 4: function_declaration
+                       ↳ 7: declaration
+                            ↳ 23: INT $@1       variable_list              ';'
+                                      ↳ 22: ε • ↳ 32: variable_declaration
+                                                      ↳ 34: IDENTIFIER
+
+
+
+State 3
+
+    2 type_spec: CHAR •  [IDENTIFIER]
+   24 $@2: ε •  [IDENTIFIER, '*']
+   25 declaration: CHAR • $@2 variable_list ';'
+
+    IDENTIFIER  reduce using rule 2 (type_spec)
+    IDENTIFIER  [reduce using rule 24 ($@2)]
+    '*'         reduce using rule 24 ($@2)
+    $default    reduce using rule 2 (type_spec)
+
+    $@2  go to state 15
+
+    reduce/reduce conflict on token IDENTIFIER:
+        2 type_spec: CHAR •
+       24 $@2: ε •
+      First example: CHAR • IDENTIFIER '(' parameter_list_typed ')' block $end
+      First reduce derivation
+        $accept
+        ↳ 0: program                                                                              $end
+             ↳ 3: function_declaration_list
+                  ↳ 4: function_declaration
+                       ↳ 6: function
+                            ↳ 39: type_spec   function_head    '(' parameter_list_typed ')' block
+                                  ↳ 2: CHAR • ↳ 42: IDENTIFIER
+      Second example: CHAR • IDENTIFIER ';' $end
+      Second reduce derivation
+        $accept
+        ↳ 0: program                                                            $end
+             ↳ 3: function_declaration_list
+                  ↳ 4: function_declaration
+                       ↳ 7: declaration
+                            ↳ 25: CHAR $@2       variable_list              ';'
+                                       ↳ 24: ε • ↳ 32: variable_declaration
+                                                       ↳ 34: IDENTIFIER
+
+
+
+State 4
+
+    9 struct_definition: STRUCT • IDENTIFIER '{' field_list '}' ';'
+   27 declaration: STRUCT • IDENTIFIER $@3 struct_var_list ';'
+
+    IDENTIFIER  shift, and go to state 16
+
+
+State 5
+
+   42 function_head: IDENTIFIER •
+
+    $default  reduce using rule 42 (function_head)
+
+
+State 6
+
+   39 function: type_spec • function_head '(' parameter_list_typed ')' block
+   42 function_head: • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 5
+
+    function_head  go to state 17
+
+
+State 7
+
+    0 $accept: program • $end
+
+    $end  shift, and go to state 18
+
+
+State 8
+
+    1 type_spec: • INT
+    2          | • CHAR
+    3 program: function_declaration_list •  [$end]
+    5 function_declaration_list: function_declaration_list • function_declaration
+    6 function_declaration: • function
+    7                     | • declaration
+    8                     | • struct_definition
+    9 struct_definition: • STRUCT IDENTIFIER '{' field_list '}' ';'
+   23 declaration: • INT $@1 variable_list ';'
+   25            | • CHAR $@2 variable_list ';'
+   27            | • STRUCT IDENTIFIER $@3 struct_var_list ';'
+   39 function: • type_spec function_head '(' parameter_list_typed ')' block
+   40         | • function_head '(' parameter_list ')' block
+   41         | • error
+   42 function_head: • IDENTIFIER
+
+    error       shift, and go to state 1
+    INT         shift, and go to state 2
+    CHAR        shift, and go to state 3
+    STRUCT      shift, and go to state 4
+    IDENTIFIER  shift, and go to state 5
+
+    $end  reduce using rule 3 (program)
+
+    type_spec             go to state 6
+    function_declaration  go to state 19
+    struct_definition     go to state 10
+    declaration           go to state 11
+    function              go to state 12
+    function_head         go to state 13
+
+
+State 9
+
+    4 function_declaration_list: function_declaration •
+
+    $default  reduce using rule 4 (function_declaration_list)
+
+
+State 10
+
+    8 function_declaration: struct_definition •
+
+    $default  reduce using rule 8 (function_declaration)
+
+
+State 11
+
+    7 function_declaration: declaration •
+
+    $default  reduce using rule 7 (function_declaration)
+
+
+State 12
+
+    6 function_declaration: function •
+
+    $default  reduce using rule 6 (function_declaration)
+
+
+State 13
+
+   40 function: function_head • '(' parameter_list ')' block
+
+    '('  shift, and go to state 20
+
+
+State 14
+
+   23 declaration: INT $@1 • variable_list ';'
+   32 variable_list: • variable_declaration
+   33              | • variable_list ',' variable_declaration
+   34 variable_declaration: • IDENTIFIER
+   35                     | • '*' IDENTIFIER
+   36                     | • IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 21
+    '*'         shift, and go to state 22
+
+    variable_list         go to state 23
+    variable_declaration  go to state 24
+
+
+State 15
+
+   25 declaration: CHAR $@2 • variable_list ';'
+   32 variable_list: • variable_declaration
+   33              | • variable_list ',' variable_declaration
+   34 variable_declaration: • IDENTIFIER
+   35                     | • '*' IDENTIFIER
+   36                     | • IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 21
+    '*'         shift, and go to state 22
+
+    variable_list         go to state 25
+    variable_declaration  go to state 24
+
+
+State 16
+
+    9 struct_definition: STRUCT IDENTIFIER • '{' field_list '}' ';'
+   26 $@3: ε •  [IDENTIFIER]
+   27 declaration: STRUCT IDENTIFIER • $@3 struct_var_list ';'
+
+    '{'  shift, and go to state 26
+
+    $default  reduce using rule 26 ($@3)
+
+    $@3  go to state 27
+
+
+State 17
+
+   39 function: type_spec function_head • '(' parameter_list_typed ')' block
+
+    '('  shift, and go to state 28
+
+
+State 18
+
+    0 $accept: program $end •
+
+    $default  accept
+
+
+State 19
+
+    5 function_declaration_list: function_declaration_list function_declaration •
+
+    $default  reduce using rule 5 (function_declaration_list)
+
+
+State 20
+
+   40 function: function_head '(' • parameter_list ')' block
+   43 parameter_list: • IDENTIFIER
+   44               | • parameter_list ',' IDENTIFIER
+   45               | ε •  [',', ')']
+
+    IDENTIFIER  shift, and go to state 29
+
+    $default  reduce using rule 45 (parameter_list)
+
+    parameter_list  go to state 30
+
+
+State 21
+
+   34 variable_declaration: IDENTIFIER •  [';', ',']
+   36                     | IDENTIFIER • array_dimensions
+   37 array_dimensions: • '[' INTEGER ']'
+   38                 | • array_dimensions '[' INTEGER ']'
+
+    '['  shift, and go to state 31
+
+    $default  reduce using rule 34 (variable_declaration)
+
+    array_dimensions  go to state 32
+
+
+State 22
+
+   35 variable_declaration: '*' • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 33
+
+
+State 23
+
+   23 declaration: INT $@1 variable_list • ';'
+   33 variable_list: variable_list • ',' variable_declaration
+
+    ';'  shift, and go to state 34
+    ','  shift, and go to state 35
+
+
+State 24
+
+   32 variable_list: variable_declaration •
+
+    $default  reduce using rule 32 (variable_list)
+
+
+State 25
+
+   25 declaration: CHAR $@2 variable_list • ';'
+   33 variable_list: variable_list • ',' variable_declaration
+
+    ';'  shift, and go to state 36
+    ','  shift, and go to state 35
+
+
+State 26
+
+    9 struct_definition: STRUCT IDENTIFIER '{' • field_list '}' ';'
+   10 field_list: • INT field_declarators ';'
+   11           | • CHAR field_declarators ';'
+   12           | • STRUCT IDENTIFIER field_declarators ';'
+   13           | • field_list INT field_declarators ';'
+   14           | • field_list CHAR field_declarators ';'
+   15           | • field_list STRUCT IDENTIFIER field_declarators ';'
+
+    INT     shift, and go to state 37
+    CHAR    shift, and go to state 38
+    STRUCT  shift, and go to state 39
+
+    field_list  go to state 40
+
+
+State 27
+
+   27 declaration: STRUCT IDENTIFIER $@3 • struct_var_list ';'
+   28 struct_var_list: • struct_var_declaration
+   29                | • struct_var_list ',' struct_var_declaration
+   30 struct_var_declaration: • IDENTIFIER
+   31                       | • IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 41
+
+    struct_var_list         go to state 42
+    struct_var_declaration  go to state 43
+
+
+State 28
+
+    1 type_spec: • INT
+    2          | • CHAR
+   39 function: type_spec function_head '(' • parameter_list_typed ')' block
+   46 parameter_list_typed: ε •  [',', ')']
+   47                     | • type_spec IDENTIFIER
+   48                     | • parameter_list_typed ',' type_spec IDENTIFIER
+
+    INT   shift, and go to state 44
+    CHAR  shift, and go to state 45
+
+    $default  reduce using rule 46 (parameter_list_typed)
+
+    type_spec             go to state 46
+    parameter_list_typed  go to state 47
+
+
+State 29
+
+   43 parameter_list: IDENTIFIER •
+
+    $default  reduce using rule 43 (parameter_list)
+
+
+State 30
+
+   40 function: function_head '(' parameter_list • ')' block
+   44 parameter_list: parameter_list • ',' IDENTIFIER
+
+    ','  shift, and go to state 48
+    ')'  shift, and go to state 49
+
+
+State 31
+
+   37 array_dimensions: '[' • INTEGER ']'
+
+    INTEGER  shift, and go to state 50
+
+
+State 32
+
+   36 variable_declaration: IDENTIFIER array_dimensions •  [';', ',']
+   38 array_dimensions: array_dimensions • '[' INTEGER ']'
+
+    '['  shift, and go to state 51
+
+    $default  reduce using rule 36 (variable_declaration)
+
+
+State 33
+
+   35 variable_declaration: '*' IDENTIFIER •
+
+    $default  reduce using rule 35 (variable_declaration)
+
+
+State 34
+
+   23 declaration: INT $@1 variable_list ';' •
+
+    $default  reduce using rule 23 (declaration)
+
+
+State 35
+
+   33 variable_list: variable_list ',' • variable_declaration
+   34 variable_declaration: • IDENTIFIER
+   35                     | • '*' IDENTIFIER
+   36                     | • IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 21
+    '*'         shift, and go to state 22
+
+    variable_declaration  go to state 52
+
+
+State 36
+
+   25 declaration: CHAR $@2 variable_list ';' •
+
+    $default  reduce using rule 25 (declaration)
+
+
+State 37
+
+   10 field_list: INT • field_declarators ';'
+   16 field_declarators: • IDENTIFIER
+   17                  | • '*' IDENTIFIER
+   18                  | • IDENTIFIER array_dimensions
+   19                  | • field_declarators ',' IDENTIFIER
+   20                  | • field_declarators ',' '*' IDENTIFIER
+   21                  | • field_declarators ',' IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 53
+    '*'         shift, and go to state 54
+
+    field_declarators  go to state 55
+
+
+State 38
+
+   11 field_list: CHAR • field_declarators ';'
+   16 field_declarators: • IDENTIFIER
+   17                  | • '*' IDENTIFIER
+   18                  | • IDENTIFIER array_dimensions
+   19                  | • field_declarators ',' IDENTIFIER
+   20                  | • field_declarators ',' '*' IDENTIFIER
+   21                  | • field_declarators ',' IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 53
+    '*'         shift, and go to state 54
+
+    field_declarators  go to state 56
+
+
+State 39
+
+   12 field_list: STRUCT • IDENTIFIER field_declarators ';'
+
+    IDENTIFIER  shift, and go to state 57
+
+
+State 40
+
+    9 struct_definition: STRUCT IDENTIFIER '{' field_list • '}' ';'
+   13 field_list: field_list • INT field_declarators ';'
+   14           | field_list • CHAR field_declarators ';'
+   15           | field_list • STRUCT IDENTIFIER field_declarators ';'
+
+    INT     shift, and go to state 58
+    CHAR    shift, and go to state 59
+    STRUCT  shift, and go to state 60
+    '}'     shift, and go to state 61
+
+
+State 41
+
+   30 struct_var_declaration: IDENTIFIER •  [';', ',']
+   31                       | IDENTIFIER • array_dimensions
+   37 array_dimensions: • '[' INTEGER ']'
+   38                 | • array_dimensions '[' INTEGER ']'
+
+    '['  shift, and go to state 31
+
+    $default  reduce using rule 30 (struct_var_declaration)
+
+    array_dimensions  go to state 62
+
+
+State 42
+
+   27 declaration: STRUCT IDENTIFIER $@3 struct_var_list • ';'
+   29 struct_var_list: struct_var_list • ',' struct_var_declaration
+
+    ';'  shift, and go to state 63
+    ','  shift, and go to state 64
+
+
+State 43
+
+   28 struct_var_list: struct_var_declaration •
+
+    $default  reduce using rule 28 (struct_var_list)
+
+
+State 44
+
+    1 type_spec: INT •
+
+    $default  reduce using rule 1 (type_spec)
+
+
+State 45
+
+    2 type_spec: CHAR •
+
+    $default  reduce using rule 2 (type_spec)
+
+
+State 46
+
+   47 parameter_list_typed: type_spec • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 65
+
+
+State 47
+
+   39 function: type_spec function_head '(' parameter_list_typed • ')' block
+   48 parameter_list_typed: parameter_list_typed • ',' type_spec IDENTIFIER
+
+    ','  shift, and go to state 66
+    ')'  shift, and go to state 67
+
+
+State 48
+
+   44 parameter_list: parameter_list ',' • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 68
+
+
+State 49
+
+   40 function: function_head '(' parameter_list ')' • block
+   62 block: • '{' declaration_list statement_list '}'
+
+    '{'  shift, and go to state 69
+
+    block  go to state 70
+
+
+State 50
+
+   37 array_dimensions: '[' INTEGER • ']'
+
+    ']'  shift, and go to state 71
+
+
+State 51
+
+   38 array_dimensions: array_dimensions '[' • INTEGER ']'
+
+    INTEGER  shift, and go to state 72
+
+
+State 52
+
+   33 variable_list: variable_list ',' variable_declaration •
+
+    $default  reduce using rule 33 (variable_list)
+
+
+State 53
+
+   16 field_declarators: IDENTIFIER •  [';', ',']
+   18                  | IDENTIFIER • array_dimensions
+   37 array_dimensions: • '[' INTEGER ']'
+   38                 | • array_dimensions '[' INTEGER ']'
+
+    '['  shift, and go to state 31
+
+    $default  reduce using rule 16 (field_declarators)
+
+    array_dimensions  go to state 73
+
+
+State 54
+
+   17 field_declarators: '*' • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 74
+
+
+State 55
+
+   10 field_list: INT field_declarators • ';'
+   19 field_declarators: field_declarators • ',' IDENTIFIER
+   20                  | field_declarators • ',' '*' IDENTIFIER
+   21                  | field_declarators • ',' IDENTIFIER array_dimensions
+
+    ';'  shift, and go to state 75
+    ','  shift, and go to state 76
+
+
+State 56
+
+   11 field_list: CHAR field_declarators • ';'
+   19 field_declarators: field_declarators • ',' IDENTIFIER
+   20                  | field_declarators • ',' '*' IDENTIFIER
+   21                  | field_declarators • ',' IDENTIFIER array_dimensions
+
+    ';'  shift, and go to state 77
+    ','  shift, and go to state 76
+
+
+State 57
+
+   12 field_list: STRUCT IDENTIFIER • field_declarators ';'
+   16 field_declarators: • IDENTIFIER
+   17                  | • '*' IDENTIFIER
+   18                  | • IDENTIFIER array_dimensions
+   19                  | • field_declarators ',' IDENTIFIER
+   20                  | • field_declarators ',' '*' IDENTIFIER
+   21                  | • field_declarators ',' IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 53
+    '*'         shift, and go to state 54
+
+    field_declarators  go to state 78
+
+
+State 58
+
+   13 field_list: field_list INT • field_declarators ';'
+   16 field_declarators: • IDENTIFIER
+   17                  | • '*' IDENTIFIER
+   18                  | • IDENTIFIER array_dimensions
+   19                  | • field_declarators ',' IDENTIFIER
+   20                  | • field_declarators ',' '*' IDENTIFIER
+   21                  | • field_declarators ',' IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 53
+    '*'         shift, and go to state 54
+
+    field_declarators  go to state 79
+
+
+State 59
+
+   14 field_list: field_list CHAR • field_declarators ';'
+   16 field_declarators: • IDENTIFIER
+   17                  | • '*' IDENTIFIER
+   18                  | • IDENTIFIER array_dimensions
+   19                  | • field_declarators ',' IDENTIFIER
+   20                  | • field_declarators ',' '*' IDENTIFIER
+   21                  | • field_declarators ',' IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 53
+    '*'         shift, and go to state 54
+
+    field_declarators  go to state 80
+
+
+State 60
+
+   15 field_list: field_list STRUCT • IDENTIFIER field_declarators ';'
+
+    IDENTIFIER  shift, and go to state 81
+
+
+State 61
+
+    9 struct_definition: STRUCT IDENTIFIER '{' field_list '}' • ';'
+
+    ';'  shift, and go to state 82
+
+
+State 62
+
+   31 struct_var_declaration: IDENTIFIER array_dimensions •  [';', ',']
+   38 array_dimensions: array_dimensions • '[' INTEGER ']'
+
+    '['  shift, and go to state 51
+
+    $default  reduce using rule 31 (struct_var_declaration)
+
+
+State 63
+
+   27 declaration: STRUCT IDENTIFIER $@3 struct_var_list ';' •
+
+    $default  reduce using rule 27 (declaration)
+
+
+State 64
+
+   29 struct_var_list: struct_var_list ',' • struct_var_declaration
+   30 struct_var_declaration: • IDENTIFIER
+   31                       | • IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 41
+
+    struct_var_declaration  go to state 83
+
+
+State 65
+
+   47 parameter_list_typed: type_spec IDENTIFIER •
+
+    $default  reduce using rule 47 (parameter_list_typed)
+
+
+State 66
+
+    1 type_spec: • INT
+    2          | • CHAR
+   48 parameter_list_typed: parameter_list_typed ',' • type_spec IDENTIFIER
+
+    INT   shift, and go to state 44
+    CHAR  shift, and go to state 45
+
+    type_spec  go to state 84
+
+
+State 67
+
+   39 function: type_spec function_head '(' parameter_list_typed ')' • block
+   62 block: • '{' declaration_list statement_list '}'
+
+    '{'  shift, and go to state 69
+
+    block  go to state 85
+
+
+State 68
+
+   44 parameter_list: parameter_list ',' IDENTIFIER •
+
+    $default  reduce using rule 44 (parameter_list)
+
+
+State 69
+
+   62 block: '{' • declaration_list statement_list '}'
+   63 declaration_list: ε •
+   64                 | • declaration_list declaration
+
+    $default  reduce using rule 63 (declaration_list)
+
+    declaration_list  go to state 86
+
+
+State 70
+
+   40 function: function_head '(' parameter_list ')' block •
+
+    $default  reduce using rule 40 (function)
+
+
+State 71
+
+   37 array_dimensions: '[' INTEGER ']' •
+
+    $default  reduce using rule 37 (array_dimensions)
+
+
+State 72
+
+   38 array_dimensions: array_dimensions '[' INTEGER • ']'
+
+    ']'  shift, and go to state 87
+
+
+State 73
+
+   18 field_declarators: IDENTIFIER array_dimensions •  [';', ',']
+   38 array_dimensions: array_dimensions • '[' INTEGER ']'
+
+    '['  shift, and go to state 51
+
+    $default  reduce using rule 18 (field_declarators)
+
+
+State 74
+
+   17 field_declarators: '*' IDENTIFIER •
+
+    $default  reduce using rule 17 (field_declarators)
+
+
+State 75
+
+   10 field_list: INT field_declarators ';' •
+
+    $default  reduce using rule 10 (field_list)
+
+
+State 76
+
+   19 field_declarators: field_declarators ',' • IDENTIFIER
+   20                  | field_declarators ',' • '*' IDENTIFIER
+   21                  | field_declarators ',' • IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 88
+    '*'         shift, and go to state 89
+
+
+State 77
+
+   11 field_list: CHAR field_declarators ';' •
+
+    $default  reduce using rule 11 (field_list)
+
+
+State 78
+
+   12 field_list: STRUCT IDENTIFIER field_declarators • ';'
+   19 field_declarators: field_declarators • ',' IDENTIFIER
+   20                  | field_declarators • ',' '*' IDENTIFIER
+   21                  | field_declarators • ',' IDENTIFIER array_dimensions
+
+    ';'  shift, and go to state 90
+    ','  shift, and go to state 76
+
+
+State 79
+
+   13 field_list: field_list INT field_declarators • ';'
+   19 field_declarators: field_declarators • ',' IDENTIFIER
+   20                  | field_declarators • ',' '*' IDENTIFIER
+   21                  | field_declarators • ',' IDENTIFIER array_dimensions
+
+    ';'  shift, and go to state 91
+    ','  shift, and go to state 76
+
+
+State 80
+
+   14 field_list: field_list CHAR field_declarators • ';'
+   19 field_declarators: field_declarators • ',' IDENTIFIER
+   20                  | field_declarators • ',' '*' IDENTIFIER
+   21                  | field_declarators • ',' IDENTIFIER array_dimensions
+
+    ';'  shift, and go to state 92
+    ','  shift, and go to state 76
+
+
+State 81
+
+   15 field_list: field_list STRUCT IDENTIFIER • field_declarators ';'
+   16 field_declarators: • IDENTIFIER
+   17                  | • '*' IDENTIFIER
+   18                  | • IDENTIFIER array_dimensions
+   19                  | • field_declarators ',' IDENTIFIER
+   20                  | • field_declarators ',' '*' IDENTIFIER
+   21                  | • field_declarators ',' IDENTIFIER array_dimensions
+
+    IDENTIFIER  shift, and go to state 53
+    '*'         shift, and go to state 54
+
+    field_declarators  go to state 93
+
+
+State 82
+
+    9 struct_definition: STRUCT IDENTIFIER '{' field_list '}' ';' •
+
+    $default  reduce using rule 9 (struct_definition)
+
+
+State 83
+
+   29 struct_var_list: struct_var_list ',' struct_var_declaration •
+
+    $default  reduce using rule 29 (struct_var_list)
+
+
+State 84
+
+   48 parameter_list_typed: parameter_list_typed ',' type_spec • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 94
+
+
+State 85
+
+   39 function: type_spec function_head '(' parameter_list_typed ')' block •
+
+    $default  reduce using rule 39 (function)
+
+
+State 86
+
+   23 declaration: • INT $@1 variable_list ';'
+   25            | • CHAR $@2 variable_list ';'
+   27            | • STRUCT IDENTIFIER $@3 struct_var_list ';'
+   62 block: '{' declaration_list • statement_list '}'
+   64 declaration_list: declaration_list • declaration
+   65 statement_list: ε •  [error, IF, WHILE, INPUT, OUTPUT, RETURN, SWITCH, BREAK, FOR, CONTINUE, IDENTIFIER, '*', '{', '}']
+   66               | • statement_list statement
+
+    INT     shift, and go to state 95
+    CHAR    shift, and go to state 96
+    STRUCT  shift, and go to state 97
+
+    $default  reduce using rule 65 (statement_list)
+
+    declaration     go to state 98
+    statement_list  go to state 99
+
+
+State 87
+
+   38 array_dimensions: array_dimensions '[' INTEGER ']' •
+
+    $default  reduce using rule 38 (array_dimensions)
+
+
+State 88
+
+   19 field_declarators: field_declarators ',' IDENTIFIER •  [';', ',']
+   21                  | field_declarators ',' IDENTIFIER • array_dimensions
+   37 array_dimensions: • '[' INTEGER ']'
+   38                 | • array_dimensions '[' INTEGER ']'
+
+    '['  shift, and go to state 31
+
+    $default  reduce using rule 19 (field_declarators)
+
+    array_dimensions  go to state 100
+
+
+State 89
+
+   20 field_declarators: field_declarators ',' '*' • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 101
+
+
+State 90
+
+   12 field_list: STRUCT IDENTIFIER field_declarators ';' •
+
+    $default  reduce using rule 12 (field_list)
+
+
+State 91
+
+   13 field_list: field_list INT field_declarators ';' •
+
+    $default  reduce using rule 13 (field_list)
+
+
+State 92
+
+   14 field_list: field_list CHAR field_declarators ';' •
+
+    $default  reduce using rule 14 (field_list)
+
+
+State 93
+
+   15 field_list: field_list STRUCT IDENTIFIER field_declarators • ';'
+   19 field_declarators: field_declarators • ',' IDENTIFIER
+   20                  | field_declarators • ',' '*' IDENTIFIER
+   21                  | field_declarators • ',' IDENTIFIER array_dimensions
+
+    ';'  shift, and go to state 102
+    ','  shift, and go to state 76
+
+
+State 94
+
+   48 parameter_list_typed: parameter_list_typed ',' type_spec IDENTIFIER •
+
+    $default  reduce using rule 48 (parameter_list_typed)
+
+
+State 95
+
+   22 $@1: ε •
+   23 declaration: INT • $@1 variable_list ';'
+
+    $default  reduce using rule 22 ($@1)
+
+    $@1  go to state 14
+
+
+State 96
+
+   24 $@2: ε •
+   25 declaration: CHAR • $@2 variable_list ';'
+
+    $default  reduce using rule 24 ($@2)
+
+    $@2  go to state 15
+
+
+State 97
+
+   27 declaration: STRUCT • IDENTIFIER $@3 struct_var_list ';'
+
+    IDENTIFIER  shift, and go to state 103
+
+
+State 98
+
+   64 declaration_list: declaration_list declaration •
+
+    $default  reduce using rule 64 (declaration_list)
+
+
+State 99
+
+   49 statement: • assignment_statement ';'
+   50          | • input_statement ';'
+   51          | • output_statement ';'
+   52          | • call_statement ';'
+   53          | • return_statement ';'
+   54          | • if_statement
+   55          | • while_statement
+   56          | • for_statement
+   57          | • switch_statement
+   58          | • BREAK ';'
+   59          | • CONTINUE ';'
+   60          | • block
+   61          | • error
+   62 block: • '{' declaration_list statement_list '}'
+   62      | '{' declaration_list statement_list • '}'
+   66 statement_list: statement_list • statement
+   67 assignment_statement: • IDENTIFIER '=' expression
+   68                     | • '*' IDENTIFIER '=' expression
+   69                     | • IDENTIFIER index_list '=' expression
+   70                     | • field_access '=' expression
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+  101 input_statement: • INPUT IDENTIFIER
+  102 output_statement: • OUTPUT IDENTIFIER
+  103                 | • OUTPUT TEXT
+  104 return_statement: • RETURN expression
+  105 if_statement: • IF '(' expression ')' block
+  106             | • IF '(' expression ')' block ELSE block
+  108 while_statement: • WHILE '(' expression ')' $@4 block
+  109 call_statement: • IDENTIFIER '(' argument_list ')'
+  114 switch_statement: • SWITCH '(' expression ')' @5 '{' case_list_opt default_opt '}'
+  123 for_statement: • FOR '(' for_init ';' for_cond ';' for_iter ')' $@6 block
+
+    error       shift, and go to state 104
+    IF          shift, and go to state 105
+    WHILE       shift, and go to state 106
+    INPUT       shift, and go to state 107
+    OUTPUT      shift, and go to state 108
+    RETURN      shift, and go to state 109
+    SWITCH      shift, and go to state 110
+    BREAK       shift, and go to state 111
+    FOR         shift, and go to state 112
+    CONTINUE    shift, and go to state 113
+    IDENTIFIER  shift, and go to state 114
+    '*'         shift, and go to state 115
+    '{'         shift, and go to state 69
+    '}'         shift, and go to state 116
+
+    statement             go to state 117
+    block                 go to state 118
+    assignment_statement  go to state 119
+    field_access          go to state 120
+    input_statement       go to state 121
+    output_statement      go to state 122
+    return_statement      go to state 123
+    if_statement          go to state 124
+    while_statement       go to state 125
+    call_statement        go to state 126
+    switch_statement      go to state 127
+    for_statement         go to state 128
+
+
+State 100
+
+   21 field_declarators: field_declarators ',' IDENTIFIER array_dimensions •  [';', ',']
+   38 array_dimensions: array_dimensions • '[' INTEGER ']'
+
+    '['  shift, and go to state 51
+
+    $default  reduce using rule 21 (field_declarators)
+
+
+State 101
+
+   20 field_declarators: field_declarators ',' '*' IDENTIFIER •
+
+    $default  reduce using rule 20 (field_declarators)
+
+
+State 102
+
+   15 field_list: field_list STRUCT IDENTIFIER field_declarators ';' •
+
+    $default  reduce using rule 15 (field_list)
+
+
+State 103
+
+   26 $@3: ε •
+   27 declaration: STRUCT IDENTIFIER • $@3 struct_var_list ';'
+
+    $default  reduce using rule 26 ($@3)
+
+    $@3  go to state 27
+
+
+State 104
+
+   61 statement: error •
+
+    $default  reduce using rule 61 (statement)
+
+
+State 105
+
+  105 if_statement: IF • '(' expression ')' block
+  106             | IF • '(' expression ')' block ELSE block
+
+    '('  shift, and go to state 129
+
+
+State 106
+
+  108 while_statement: WHILE • '(' expression ')' $@4 block
+
+    '('  shift, and go to state 130
+
+
+State 107
+
+  101 input_statement: INPUT • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 131
+
+
+State 108
+
+  102 output_statement: OUTPUT • IDENTIFIER
+  103                 | OUTPUT • TEXT
+
+    IDENTIFIER  shift, and go to state 132
+    TEXT        shift, and go to state 133
+
+
+State 109
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  104 return_statement: RETURN • expression
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 143
+    call_expression  go to state 144
+
+
+State 110
+
+  114 switch_statement: SWITCH • '(' expression ')' @5 '{' case_list_opt default_opt '}'
+
+    '('  shift, and go to state 145
+
+
+State 111
+
+   58 statement: BREAK • ';'
+
+    ';'  shift, and go to state 146
+
+
+State 112
+
+  123 for_statement: FOR • '(' for_init ';' for_cond ';' for_iter ')' $@6 block
+
+    '('  shift, and go to state 147
+
+
+State 113
+
+   59 statement: CONTINUE • ';'
+
+    ';'  shift, and go to state 148
+
+
+State 114
+
+   67 assignment_statement: IDENTIFIER • '=' expression
+   69                     | IDENTIFIER • index_list '=' expression
+   71 field_access: IDENTIFIER • DOT IDENTIFIER
+   72             | IDENTIFIER • index_list DOT IDENTIFIER
+  109 call_statement: IDENTIFIER • '(' argument_list ')'
+  111 index_list: • '[' expression ']'
+  112           | • index_list '[' expression ']'
+
+    DOT  shift, and go to state 149
+    '['  shift, and go to state 150
+    '('  shift, and go to state 151
+    '='  shift, and go to state 152
+
+    index_list  go to state 153
+
+
+State 115
+
+   68 assignment_statement: '*' • IDENTIFIER '=' expression
+
+    IDENTIFIER  shift, and go to state 154
+
+
+State 116
+
+   62 block: '{' declaration_list statement_list '}' •
+
+    $default  reduce using rule 62 (block)
+
+
+State 117
+
+   66 statement_list: statement_list statement •
+
+    $default  reduce using rule 66 (statement_list)
+
+
+State 118
+
+   60 statement: block •
+
+    $default  reduce using rule 60 (statement)
+
+
+State 119
+
+   49 statement: assignment_statement • ';'
+
+    ';'  shift, and go to state 155
+
+
+State 120
+
+   70 assignment_statement: field_access • '=' expression
+   73 field_access: field_access • DOT IDENTIFIER
+   74             | field_access • '[' expression ']'
+
+    DOT  shift, and go to state 156
+    '['  shift, and go to state 157
+    '='  shift, and go to state 158
+
+
+State 121
+
+   50 statement: input_statement • ';'
+
+    ';'  shift, and go to state 159
+
+
+State 122
+
+   51 statement: output_statement • ';'
+
+    ';'  shift, and go to state 160
+
+
+State 123
+
+   53 statement: return_statement • ';'
+
+    ';'  shift, and go to state 161
+
+
+State 124
+
+   54 statement: if_statement •
+
+    $default  reduce using rule 54 (statement)
+
+
+State 125
+
+   55 statement: while_statement •
+
+    $default  reduce using rule 55 (statement)
+
+
+State 126
+
+   52 statement: call_statement • ';'
+
+    ';'  shift, and go to state 162
+
+
+State 127
+
+   57 statement: switch_statement •
+
+    $default  reduce using rule 57 (statement)
+
+
+State 128
+
+   56 statement: for_statement •
+
+    $default  reduce using rule 56 (statement)
+
+
+State 129
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  105 if_statement: IF '(' • expression ')' block
+  106             | IF '(' • expression ')' block ELSE block
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 163
+    call_expression  go to state 144
+
+
+State 130
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  108 while_statement: WHILE '(' • expression ')' $@4 block
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 164
+    call_expression  go to state 144
+
+
+State 131
+
+  101 input_statement: INPUT IDENTIFIER •
+
+    $default  reduce using rule 101 (input_statement)
+
+
+State 132
+
+  102 output_statement: OUTPUT IDENTIFIER •
+
+    $default  reduce using rule 102 (output_statement)
+
+
+State 133
+
+  103 output_statement: OUTPUT TEXT •
+
+    $default  reduce using rule 103 (output_statement)
+
+
+State 134
+
+   96 expression: error •
+
+    $default  reduce using rule 96 (expression)
+
+
+State 135
+
+   87 expression: INTEGER •
+
+    $default  reduce using rule 87 (expression)
+
+
+State 136
+
+   71 field_access: IDENTIFIER • DOT IDENTIFIER
+   72             | IDENTIFIER • index_list DOT IDENTIFIER
+   92 expression: IDENTIFIER •  [EQ, NE, LT, LE, GT, GE, '+', '-', '*', '/', ';', ',', ']', ')']
+   93           | IDENTIFIER • index_list
+  110 call_expression: IDENTIFIER • '(' argument_list ')'
+  111 index_list: • '[' expression ']'
+  112           | • index_list '[' expression ']'
+
+    DOT  shift, and go to state 149
+    '['  shift, and go to state 150
+    '('  shift, and go to state 165
+
+    $default  reduce using rule 92 (expression)
+
+    index_list  go to state 166
+
+
+State 137
+
+   88 expression: CHARACTER •
+
+    $default  reduce using rule 88 (expression)
+
+
+State 138
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   79           | '-' • expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 167
+    call_expression  go to state 144
+
+
+State 139
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   91           | '*' • expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 168
+    call_expression  go to state 144
+
+
+State 140
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   86           | '(' • expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 169
+    call_expression  go to state 144
+
+
+State 141
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   89 expression: '&' • IDENTIFIER
+   90           | '&' • field_access
+
+    IDENTIFIER  shift, and go to state 170
+
+    field_access  go to state 171
+
+
+State 142
+
+   73 field_access: field_access • DOT IDENTIFIER
+   74             | field_access • '[' expression ']'
+   94 expression: field_access •  [EQ, NE, LT, LE, GT, GE, '+', '-', '*', '/', ';', ',', ']', ')']
+
+    DOT  shift, and go to state 156
+    '['  shift, and go to state 157
+
+    $default  reduce using rule 94 (expression)
+
+
+State 143
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  104 return_statement: RETURN expression •  [';']
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 104 (return_statement)
+
+
+State 144
+
+   95 expression: call_expression •
+
+    $default  reduce using rule 95 (expression)
+
+
+State 145
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+  114 switch_statement: SWITCH '(' • expression ')' @5 '{' case_list_opt default_opt '}'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 182
+    call_expression  go to state 144
+
+
+State 146
+
+   58 statement: BREAK ';' •
+
+    $default  reduce using rule 58 (statement)
+
+
+State 147
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+  123 for_statement: FOR '(' • for_init ';' for_cond ';' for_iter ')' $@6 block
+  124 for_init: ε •  [';']
+  125         | • IDENTIFIER '=' expression
+  126         | • expression
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 183
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    ';'  reduce using rule 124 (for_init)
+
+    field_access     go to state 142
+    expression       go to state 184
+    call_expression  go to state 144
+    for_init         go to state 185
+
+
+State 148
+
+   59 statement: CONTINUE ';' •
+
+    $default  reduce using rule 59 (statement)
+
+
+State 149
+
+   71 field_access: IDENTIFIER DOT • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 186
+
+
+State 150
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+  111 index_list: '[' • expression ']'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 187
+    call_expression  go to state 144
+
+
+State 151
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+   97 argument_list: ε •  [')']
+   98              | • expression_list
+   99 expression_list: • expression
+  100                | • expression_list ',' expression
+  109 call_statement: IDENTIFIER '(' • argument_list ')'
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    ')'  reduce using rule 97 (argument_list)
+
+    field_access     go to state 142
+    expression       go to state 188
+    argument_list    go to state 189
+    expression_list  go to state 190
+    call_expression  go to state 144
+
+
+State 152
+
+   67 assignment_statement: IDENTIFIER '=' • expression
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 191
+    call_expression  go to state 144
+
+
+State 153
+
+   69 assignment_statement: IDENTIFIER index_list • '=' expression
+   72 field_access: IDENTIFIER index_list • DOT IDENTIFIER
+  112 index_list: index_list • '[' expression ']'
+
+    DOT  shift, and go to state 192
+    '['  shift, and go to state 193
+    '='  shift, and go to state 194
+
+
+State 154
+
+   68 assignment_statement: '*' IDENTIFIER • '=' expression
+
+    '='  shift, and go to state 195
+
+
+State 155
+
+   49 statement: assignment_statement ';' •
+
+    $default  reduce using rule 49 (statement)
+
+
+State 156
+
+   73 field_access: field_access DOT • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 196
+
+
+State 157
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   74             | field_access '[' • expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 197
+    call_expression  go to state 144
+
+
+State 158
+
+   70 assignment_statement: field_access '=' • expression
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 198
+    call_expression  go to state 144
+
+
+State 159
+
+   50 statement: input_statement ';' •
+
+    $default  reduce using rule 50 (statement)
+
+
+State 160
+
+   51 statement: output_statement ';' •
+
+    $default  reduce using rule 51 (statement)
+
+
+State 161
+
+   53 statement: return_statement ';' •
+
+    $default  reduce using rule 53 (statement)
+
+
+State 162
+
+   52 statement: call_statement ';' •
+
+    $default  reduce using rule 52 (statement)
+
+
+State 163
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  105 if_statement: IF '(' expression • ')' block
+  106             | IF '(' expression • ')' block ELSE block
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+    ')'  shift, and go to state 199
+
+
+State 164
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  108 while_statement: WHILE '(' expression • ')' $@4 block
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+    ')'  shift, and go to state 200
+
+
+State 165
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+   97 argument_list: ε •  [')']
+   98              | • expression_list
+   99 expression_list: • expression
+  100                | • expression_list ',' expression
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+  110                | IDENTIFIER '(' • argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    ')'  reduce using rule 97 (argument_list)
+
+    field_access     go to state 142
+    expression       go to state 188
+    argument_list    go to state 201
+    expression_list  go to state 190
+    call_expression  go to state 144
+
+
+State 166
+
+   72 field_access: IDENTIFIER index_list • DOT IDENTIFIER
+   93 expression: IDENTIFIER index_list •  [EQ, NE, LT, LE, GT, GE, '+', '-', '*', '/', ';', ',', ']', ')']
+  112 index_list: index_list • '[' expression ']'
+
+    DOT  shift, and go to state 192
+    '['  shift, and go to state 193
+
+    $default  reduce using rule 93 (expression)
+
+
+State 167
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   79           | '-' expression •  [EQ, NE, LT, LE, GT, GE, '+', '-', '*', '/', ';', ',', ']', ')']
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    $default  reduce using rule 79 (expression)
+
+    Conflict between rule 79 and token EQ resolved as reduce (EQ < UMINUS).
+    Conflict between rule 79 and token NE resolved as reduce (NE < UMINUS).
+    Conflict between rule 79 and token LT resolved as reduce (LT < UMINUS).
+    Conflict between rule 79 and token LE resolved as reduce (LE < UMINUS).
+    Conflict between rule 79 and token GT resolved as reduce (GT < UMINUS).
+    Conflict between rule 79 and token GE resolved as reduce (GE < UMINUS).
+    Conflict between rule 79 and token '+' resolved as reduce ('+' < UMINUS).
+    Conflict between rule 79 and token '-' resolved as reduce ('-' < UMINUS).
+    Conflict between rule 79 and token '*' resolved as reduce ('*' < UMINUS).
+    Conflict between rule 79 and token '/' resolved as reduce ('/' < UMINUS).
+
+
+State 168
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+   91           | '*' expression •  [EQ, NE, LT, LE, GT, GE, '+', '-', '*', '/', ';', ',', ']', ')']
+
+    $default  reduce using rule 91 (expression)
+
+    Conflict between rule 91 and token EQ resolved as reduce (EQ < UDEREF).
+    Conflict between rule 91 and token NE resolved as reduce (NE < UDEREF).
+    Conflict between rule 91 and token LT resolved as reduce (LT < UDEREF).
+    Conflict between rule 91 and token LE resolved as reduce (LE < UDEREF).
+    Conflict between rule 91 and token GT resolved as reduce (GT < UDEREF).
+    Conflict between rule 91 and token GE resolved as reduce (GE < UDEREF).
+    Conflict between rule 91 and token '+' resolved as reduce ('+' < UDEREF).
+    Conflict between rule 91 and token '-' resolved as reduce ('-' < UDEREF).
+    Conflict between rule 91 and token '*' resolved as reduce ('*' < UDEREF).
+    Conflict between rule 91 and token '/' resolved as reduce ('/' < UDEREF).
+
+
+State 169
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+   86           | '(' expression • ')'
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+    ')'  shift, and go to state 202
+
+
+State 170
+
+   71 field_access: IDENTIFIER • DOT IDENTIFIER
+   72             | IDENTIFIER • index_list DOT IDENTIFIER
+   89 expression: '&' IDENTIFIER •  [EQ, NE, LT, LE, GT, GE, '+', '-', '*', '/', ';', ',', ']', ')']
+  111 index_list: • '[' expression ']'
+  112           | • index_list '[' expression ']'
+
+    DOT  shift, and go to state 149
+    '['  shift, and go to state 150
+
+    $default  reduce using rule 89 (expression)
+
+    index_list  go to state 203
+
+
+State 171
+
+   73 field_access: field_access • DOT IDENTIFIER
+   74             | field_access • '[' expression ']'
+   90 expression: '&' field_access •  [EQ, NE, LT, LE, GT, GE, '+', '-', '*', '/', ';', ',', ']', ')']
+
+    DOT  shift, and go to state 156
+    '['  shift, and go to state 157
+
+    $default  reduce using rule 90 (expression)
+
+
+State 172
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   80           | expression EQ • expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 204
+    call_expression  go to state 144
+
+
+State 173
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   81           | expression NE • expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 205
+    call_expression  go to state 144
+
+
+State 174
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   82           | expression LT • expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 206
+    call_expression  go to state 144
+
+
+State 175
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   83           | expression LE • expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 207
+    call_expression  go to state 144
+
+
+State 176
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   84           | expression GT • expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 208
+    call_expression  go to state 144
+
+
+State 177
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   85           | expression GE • expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 209
+    call_expression  go to state 144
+
+
+State 178
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   75           | expression '+' • expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 210
+    call_expression  go to state 144
+
+
+State 179
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   76           | expression '-' • expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 211
+    call_expression  go to state 144
+
+
+State 180
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   77           | expression '*' • expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 212
+    call_expression  go to state 144
+
+
+State 181
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   78           | expression '/' • expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 213
+    call_expression  go to state 144
+
+
+State 182
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  114 switch_statement: SWITCH '(' expression • ')' @5 '{' case_list_opt default_opt '}'
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+    ')'  shift, and go to state 214
+
+
+State 183
+
+   71 field_access: IDENTIFIER • DOT IDENTIFIER
+   72             | IDENTIFIER • index_list DOT IDENTIFIER
+   92 expression: IDENTIFIER •  [EQ, NE, LT, LE, GT, GE, '+', '-', '*', '/', ';']
+   93           | IDENTIFIER • index_list
+  110 call_expression: IDENTIFIER • '(' argument_list ')'
+  111 index_list: • '[' expression ']'
+  112           | • index_list '[' expression ']'
+  125 for_init: IDENTIFIER • '=' expression
+
+    DOT  shift, and go to state 149
+    '['  shift, and go to state 150
+    '('  shift, and go to state 165
+    '='  shift, and go to state 215
+
+    $default  reduce using rule 92 (expression)
+
+    index_list  go to state 166
+
+
+State 184
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  126 for_init: expression •  [';']
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 126 (for_init)
+
+
+State 185
+
+  123 for_statement: FOR '(' for_init • ';' for_cond ';' for_iter ')' $@6 block
+
+    ';'  shift, and go to state 216
+
+
+State 186
+
+   71 field_access: IDENTIFIER DOT IDENTIFIER •
+
+    $default  reduce using rule 71 (field_access)
+
+
+State 187
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  111 index_list: '[' expression • ']'
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+    ']'  shift, and go to state 217
+
+
+State 188
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+   99 expression_list: expression •  [',', ')']
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 99 (expression_list)
+
+
+State 189
+
+  109 call_statement: IDENTIFIER '(' argument_list • ')'
+
+    ')'  shift, and go to state 218
+
+
+State 190
+
+   98 argument_list: expression_list •  [')']
+  100 expression_list: expression_list • ',' expression
+
+    ','  shift, and go to state 219
+
+    $default  reduce using rule 98 (argument_list)
+
+
+State 191
+
+   67 assignment_statement: IDENTIFIER '=' expression •  [';']
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 67 (assignment_statement)
+
+
+State 192
+
+   72 field_access: IDENTIFIER index_list DOT • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 220
+
+
+State 193
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+  112 index_list: index_list '[' • expression ']'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 221
+    call_expression  go to state 144
+
+
+State 194
+
+   69 assignment_statement: IDENTIFIER index_list '=' • expression
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 222
+    call_expression  go to state 144
+
+
+State 195
+
+   68 assignment_statement: '*' IDENTIFIER '=' • expression
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 223
+    call_expression  go to state 144
+
+
+State 196
+
+   73 field_access: field_access DOT IDENTIFIER •
+
+    $default  reduce using rule 73 (field_access)
+
+
+State 197
+
+   74 field_access: field_access '[' expression • ']'
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+    ']'  shift, and go to state 224
+
+
+State 198
+
+   70 assignment_statement: field_access '=' expression •  [';']
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 70 (assignment_statement)
+
+
+State 199
+
+   62 block: • '{' declaration_list statement_list '}'
+  105 if_statement: IF '(' expression ')' • block
+  106             | IF '(' expression ')' • block ELSE block
+
+    '{'  shift, and go to state 69
+
+    block  go to state 225
+
+
+State 200
+
+  107 $@4: ε •
+  108 while_statement: WHILE '(' expression ')' • $@4 block
+
+    $default  reduce using rule 107 ($@4)
+
+    $@4  go to state 226
+
+
+State 201
+
+  110 call_expression: IDENTIFIER '(' argument_list • ')'
+
+    ')'  shift, and go to state 227
+
+
+State 202
+
+   86 expression: '(' expression ')' •
+
+    $default  reduce using rule 86 (expression)
+
+
+State 203
+
+   72 field_access: IDENTIFIER index_list • DOT IDENTIFIER
+  112 index_list: index_list • '[' expression ']'
+
+    DOT  shift, and go to state 192
+    '['  shift, and go to state 193
+
+
+State 204
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   80           | expression EQ expression •  [EQ, NE, LT, LE, GT, GE, ';', ',', ']', ')']
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 80 (expression)
+
+    Conflict between rule 80 and token EQ resolved as reduce (%left EQ).
+    Conflict between rule 80 and token NE resolved as reduce (%left NE).
+    Conflict between rule 80 and token LT resolved as reduce (%left LT).
+    Conflict between rule 80 and token LE resolved as reduce (%left LE).
+    Conflict between rule 80 and token GT resolved as reduce (%left GT).
+    Conflict between rule 80 and token GE resolved as reduce (%left GE).
+    Conflict between rule 80 and token '+' resolved as shift (EQ < '+').
+    Conflict between rule 80 and token '-' resolved as shift (EQ < '-').
+    Conflict between rule 80 and token '*' resolved as shift (EQ < '*').
+    Conflict between rule 80 and token '/' resolved as shift (EQ < '/').
+
+
+State 205
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   81           | expression NE expression •  [EQ, NE, LT, LE, GT, GE, ';', ',', ']', ')']
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 81 (expression)
+
+    Conflict between rule 81 and token EQ resolved as reduce (%left EQ).
+    Conflict between rule 81 and token NE resolved as reduce (%left NE).
+    Conflict between rule 81 and token LT resolved as reduce (%left LT).
+    Conflict between rule 81 and token LE resolved as reduce (%left LE).
+    Conflict between rule 81 and token GT resolved as reduce (%left GT).
+    Conflict between rule 81 and token GE resolved as reduce (%left GE).
+    Conflict between rule 81 and token '+' resolved as shift (NE < '+').
+    Conflict between rule 81 and token '-' resolved as shift (NE < '-').
+    Conflict between rule 81 and token '*' resolved as shift (NE < '*').
+    Conflict between rule 81 and token '/' resolved as shift (NE < '/').
+
+
+State 206
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   82           | expression LT expression •  [EQ, NE, LT, LE, GT, GE, ';', ',', ']', ')']
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 82 (expression)
+
+    Conflict between rule 82 and token EQ resolved as reduce (%left EQ).
+    Conflict between rule 82 and token NE resolved as reduce (%left NE).
+    Conflict between rule 82 and token LT resolved as reduce (%left LT).
+    Conflict between rule 82 and token LE resolved as reduce (%left LE).
+    Conflict between rule 82 and token GT resolved as reduce (%left GT).
+    Conflict between rule 82 and token GE resolved as reduce (%left GE).
+    Conflict between rule 82 and token '+' resolved as shift (LT < '+').
+    Conflict between rule 82 and token '-' resolved as shift (LT < '-').
+    Conflict between rule 82 and token '*' resolved as shift (LT < '*').
+    Conflict between rule 82 and token '/' resolved as shift (LT < '/').
+
+
+State 207
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   83           | expression LE expression •  [EQ, NE, LT, LE, GT, GE, ';', ',', ']', ')']
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 83 (expression)
+
+    Conflict between rule 83 and token EQ resolved as reduce (%left EQ).
+    Conflict between rule 83 and token NE resolved as reduce (%left NE).
+    Conflict between rule 83 and token LT resolved as reduce (%left LT).
+    Conflict between rule 83 and token LE resolved as reduce (%left LE).
+    Conflict between rule 83 and token GT resolved as reduce (%left GT).
+    Conflict between rule 83 and token GE resolved as reduce (%left GE).
+    Conflict between rule 83 and token '+' resolved as shift (LE < '+').
+    Conflict between rule 83 and token '-' resolved as shift (LE < '-').
+    Conflict between rule 83 and token '*' resolved as shift (LE < '*').
+    Conflict between rule 83 and token '/' resolved as shift (LE < '/').
+
+
+State 208
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   84           | expression GT expression •  [EQ, NE, LT, LE, GT, GE, ';', ',', ']', ')']
+   85           | expression • GE expression
+
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 84 (expression)
+
+    Conflict between rule 84 and token EQ resolved as reduce (%left EQ).
+    Conflict between rule 84 and token NE resolved as reduce (%left NE).
+    Conflict between rule 84 and token LT resolved as reduce (%left LT).
+    Conflict between rule 84 and token LE resolved as reduce (%left LE).
+    Conflict between rule 84 and token GT resolved as reduce (%left GT).
+    Conflict between rule 84 and token GE resolved as reduce (%left GE).
+    Conflict between rule 84 and token '+' resolved as shift (GT < '+').
+    Conflict between rule 84 and token '-' resolved as shift (GT < '-').
+    Conflict between rule 84 and token '*' resolved as shift (GT < '*').
+    Conflict between rule 84 and token '/' resolved as shift (GT < '/').
+
+
+State 209
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+   85           | expression GE expression •  [EQ, NE, LT, LE, GT, GE, ';', ',', ']', ')']
+
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 85 (expression)
+
+    Conflict between rule 85 and token EQ resolved as reduce (%left EQ).
+    Conflict between rule 85 and token NE resolved as reduce (%left NE).
+    Conflict between rule 85 and token LT resolved as reduce (%left LT).
+    Conflict between rule 85 and token LE resolved as reduce (%left LE).
+    Conflict between rule 85 and token GT resolved as reduce (%left GT).
+    Conflict between rule 85 and token GE resolved as reduce (%left GE).
+    Conflict between rule 85 and token '+' resolved as shift (GE < '+').
+    Conflict between rule 85 and token '-' resolved as shift (GE < '-').
+    Conflict between rule 85 and token '*' resolved as shift (GE < '*').
+    Conflict between rule 85 and token '/' resolved as shift (GE < '/').
+
+
+State 210
+
+   75 expression: expression • '+' expression
+   75           | expression '+' expression •  [EQ, NE, LT, LE, GT, GE, '+', '-', ';', ',', ']', ')']
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 75 (expression)
+
+    Conflict between rule 75 and token EQ resolved as reduce (EQ < '+').
+    Conflict between rule 75 and token NE resolved as reduce (NE < '+').
+    Conflict between rule 75 and token LT resolved as reduce (LT < '+').
+    Conflict between rule 75 and token LE resolved as reduce (LE < '+').
+    Conflict between rule 75 and token GT resolved as reduce (GT < '+').
+    Conflict between rule 75 and token GE resolved as reduce (GE < '+').
+    Conflict between rule 75 and token '+' resolved as reduce (%left '+').
+    Conflict between rule 75 and token '-' resolved as reduce (%left '-').
+    Conflict between rule 75 and token '*' resolved as shift ('+' < '*').
+    Conflict between rule 75 and token '/' resolved as shift ('+' < '/').
+
+
+State 211
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   76           | expression '-' expression •  [EQ, NE, LT, LE, GT, GE, '+', '-', ';', ',', ']', ')']
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 76 (expression)
+
+    Conflict between rule 76 and token EQ resolved as reduce (EQ < '-').
+    Conflict between rule 76 and token NE resolved as reduce (NE < '-').
+    Conflict between rule 76 and token LT resolved as reduce (LT < '-').
+    Conflict between rule 76 and token LE resolved as reduce (LE < '-').
+    Conflict between rule 76 and token GT resolved as reduce (GT < '-').
+    Conflict between rule 76 and token GE resolved as reduce (GE < '-').
+    Conflict between rule 76 and token '+' resolved as reduce (%left '+').
+    Conflict between rule 76 and token '-' resolved as reduce (%left '-').
+    Conflict between rule 76 and token '*' resolved as shift ('-' < '*').
+    Conflict between rule 76 and token '/' resolved as shift ('-' < '/').
+
+
+State 212
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   77           | expression '*' expression •  [EQ, NE, LT, LE, GT, GE, '+', '-', '*', '/', ';', ',', ']', ')']
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    $default  reduce using rule 77 (expression)
+
+    Conflict between rule 77 and token EQ resolved as reduce (EQ < '*').
+    Conflict between rule 77 and token NE resolved as reduce (NE < '*').
+    Conflict between rule 77 and token LT resolved as reduce (LT < '*').
+    Conflict between rule 77 and token LE resolved as reduce (LE < '*').
+    Conflict between rule 77 and token GT resolved as reduce (GT < '*').
+    Conflict between rule 77 and token GE resolved as reduce (GE < '*').
+    Conflict between rule 77 and token '+' resolved as reduce ('+' < '*').
+    Conflict between rule 77 and token '-' resolved as reduce ('-' < '*').
+    Conflict between rule 77 and token '*' resolved as reduce (%left '*').
+    Conflict between rule 77 and token '/' resolved as reduce (%left '/').
+
+
+State 213
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   78           | expression '/' expression •  [EQ, NE, LT, LE, GT, GE, '+', '-', '*', '/', ';', ',', ']', ')']
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    $default  reduce using rule 78 (expression)
+
+    Conflict between rule 78 and token EQ resolved as reduce (EQ < '/').
+    Conflict between rule 78 and token NE resolved as reduce (NE < '/').
+    Conflict between rule 78 and token LT resolved as reduce (LT < '/').
+    Conflict between rule 78 and token LE resolved as reduce (LE < '/').
+    Conflict between rule 78 and token GT resolved as reduce (GT < '/').
+    Conflict between rule 78 and token GE resolved as reduce (GE < '/').
+    Conflict between rule 78 and token '+' resolved as reduce ('+' < '/').
+    Conflict between rule 78 and token '-' resolved as reduce ('-' < '/').
+    Conflict between rule 78 and token '*' resolved as reduce (%left '*').
+    Conflict between rule 78 and token '/' resolved as reduce (%left '/').
+
+
+State 214
+
+  113 @5: ε •
+  114 switch_statement: SWITCH '(' expression ')' • @5 '{' case_list_opt default_opt '}'
+
+    $default  reduce using rule 113 (@5)
+
+    @5  go to state 228
+
+
+State 215
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+  125 for_init: IDENTIFIER '=' • expression
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 229
+    call_expression  go to state 144
+
+
+State 216
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+  123 for_statement: FOR '(' for_init ';' • for_cond ';' for_iter ')' $@6 block
+  127 for_cond: ε •  [';']
+  128         | • expression
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    ';'  reduce using rule 127 (for_cond)
+
+    field_access     go to state 142
+    expression       go to state 230
+    call_expression  go to state 144
+    for_cond         go to state 231
+
+
+State 217
+
+  111 index_list: '[' expression ']' •
+
+    $default  reduce using rule 111 (index_list)
+
+
+State 218
+
+  109 call_statement: IDENTIFIER '(' argument_list ')' •
+
+    $default  reduce using rule 109 (call_statement)
+
+
+State 219
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  100 expression_list: expression_list ',' • expression
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 232
+    call_expression  go to state 144
+
+
+State 220
+
+   72 field_access: IDENTIFIER index_list DOT IDENTIFIER •
+
+    $default  reduce using rule 72 (field_access)
+
+
+State 221
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  112 index_list: index_list '[' expression • ']'
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+    ']'  shift, and go to state 233
+
+
+State 222
+
+   69 assignment_statement: IDENTIFIER index_list '=' expression •  [';']
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 69 (assignment_statement)
+
+
+State 223
+
+   68 assignment_statement: '*' IDENTIFIER '=' expression •  [';']
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 68 (assignment_statement)
+
+
+State 224
+
+   74 field_access: field_access '[' expression ']' •
+
+    $default  reduce using rule 74 (field_access)
+
+
+State 225
+
+  105 if_statement: IF '(' expression ')' block •  [error, IF, WHILE, INPUT, OUTPUT, RETURN, SWITCH, CASE, DEFAULT, BREAK, FOR, CONTINUE, IDENTIFIER, '*', '{', '}']
+  106             | IF '(' expression ')' block • ELSE block
+
+    ELSE  shift, and go to state 234
+
+    $default  reduce using rule 105 (if_statement)
+
+
+State 226
+
+   62 block: • '{' declaration_list statement_list '}'
+  108 while_statement: WHILE '(' expression ')' $@4 • block
+
+    '{'  shift, and go to state 69
+
+    block  go to state 235
+
+
+State 227
+
+  110 call_expression: IDENTIFIER '(' argument_list ')' •
+
+    $default  reduce using rule 110 (call_expression)
+
+
+State 228
+
+  114 switch_statement: SWITCH '(' expression ')' @5 • '{' case_list_opt default_opt '}'
+
+    '{'  shift, and go to state 236
+
+
+State 229
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  125 for_init: IDENTIFIER '=' expression •  [';']
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 125 (for_init)
+
+
+State 230
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  128 for_cond: expression •  [';']
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 128 (for_cond)
+
+
+State 231
+
+  123 for_statement: FOR '(' for_init ';' for_cond • ';' for_iter ')' $@6 block
+
+    ';'  shift, and go to state 237
+
+
+State 232
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  100 expression_list: expression_list ',' expression •  [',', ')']
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 100 (expression_list)
+
+
+State 233
+
+  112 index_list: index_list '[' expression ']' •
+
+    $default  reduce using rule 112 (index_list)
+
+
+State 234
+
+   62 block: • '{' declaration_list statement_list '}'
+  106 if_statement: IF '(' expression ')' block ELSE • block
+
+    '{'  shift, and go to state 69
+
+    block  go to state 238
+
+
+State 235
+
+  108 while_statement: WHILE '(' expression ')' $@4 block •
+
+    $default  reduce using rule 108 (while_statement)
+
+
+State 236
+
+  114 switch_statement: SWITCH '(' expression ')' @5 '{' • case_list_opt default_opt '}'
+  115 case_list_opt: ε •  [DEFAULT, '}']
+  116              | • case_list
+  117 case_list: • case_clause
+  118          | • case_list case_clause
+  119 case_clause: • CASE INTEGER ':' statement_list
+
+    CASE  shift, and go to state 239
+
+    $default  reduce using rule 115 (case_list_opt)
+
+    case_list_opt  go to state 240
+    case_list      go to state 241
+    case_clause    go to state 242
+
+
+State 237
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+  123 for_statement: FOR '(' for_init ';' for_cond ';' • for_iter ')' $@6 block
+  129 for_iter: ε •  [')']
+  130         | • IDENTIFIER '=' expression
+  131         | • expression
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 243
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    ')'  reduce using rule 129 (for_iter)
+
+    field_access     go to state 142
+    expression       go to state 244
+    call_expression  go to state 144
+    for_iter         go to state 245
+
+
+State 238
+
+  106 if_statement: IF '(' expression ')' block ELSE block •
+
+    $default  reduce using rule 106 (if_statement)
+
+
+State 239
+
+  119 case_clause: CASE • INTEGER ':' statement_list
+
+    INTEGER  shift, and go to state 246
+
+
+State 240
+
+  114 switch_statement: SWITCH '(' expression ')' @5 '{' case_list_opt • default_opt '}'
+  120 default_opt: ε •  ['}']
+  121            | • DEFAULT ':' statement_list
+
+    DEFAULT  shift, and go to state 247
+
+    $default  reduce using rule 120 (default_opt)
+
+    default_opt  go to state 248
+
+
+State 241
+
+  116 case_list_opt: case_list •  [DEFAULT, '}']
+  118 case_list: case_list • case_clause
+  119 case_clause: • CASE INTEGER ':' statement_list
+
+    CASE  shift, and go to state 239
+
+    $default  reduce using rule 116 (case_list_opt)
+
+    case_clause  go to state 249
+
+
+State 242
+
+  117 case_list: case_clause •
+
+    $default  reduce using rule 117 (case_list)
+
+
+State 243
+
+   71 field_access: IDENTIFIER • DOT IDENTIFIER
+   72             | IDENTIFIER • index_list DOT IDENTIFIER
+   92 expression: IDENTIFIER •  [EQ, NE, LT, LE, GT, GE, '+', '-', '*', '/', ')']
+   93           | IDENTIFIER • index_list
+  110 call_expression: IDENTIFIER • '(' argument_list ')'
+  111 index_list: • '[' expression ']'
+  112           | • index_list '[' expression ']'
+  130 for_iter: IDENTIFIER • '=' expression
+
+    DOT  shift, and go to state 149
+    '['  shift, and go to state 150
+    '('  shift, and go to state 165
+    '='  shift, and go to state 250
+
+    $default  reduce using rule 92 (expression)
+
+    index_list  go to state 166
+
+
+State 244
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  131 for_iter: expression •  [')']
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 131 (for_iter)
+
+
+State 245
+
+  123 for_statement: FOR '(' for_init ';' for_cond ';' for_iter • ')' $@6 block
+
+    ')'  shift, and go to state 251
+
+
+State 246
+
+  119 case_clause: CASE INTEGER • ':' statement_list
+
+    ':'  shift, and go to state 252
+
+
+State 247
+
+  121 default_opt: DEFAULT • ':' statement_list
+
+    ':'  shift, and go to state 253
+
+
+State 248
+
+  114 switch_statement: SWITCH '(' expression ')' @5 '{' case_list_opt default_opt • '}'
+
+    '}'  shift, and go to state 254
+
+
+State 249
+
+  118 case_list: case_list case_clause •
+
+    $default  reduce using rule 118 (case_list)
+
+
+State 250
+
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+   75 expression: • expression '+' expression
+   76           | • expression '-' expression
+   77           | • expression '*' expression
+   78           | • expression '/' expression
+   79           | • '-' expression
+   80           | • expression EQ expression
+   81           | • expression NE expression
+   82           | • expression LT expression
+   83           | • expression LE expression
+   84           | • expression GT expression
+   85           | • expression GE expression
+   86           | • '(' expression ')'
+   87           | • INTEGER
+   88           | • CHARACTER
+   89           | • '&' IDENTIFIER
+   90           | • '&' field_access
+   91           | • '*' expression
+   92           | • IDENTIFIER
+   93           | • IDENTIFIER index_list
+   94           | • field_access
+   95           | • call_expression
+   96           | • error
+  110 call_expression: • IDENTIFIER '(' argument_list ')'
+  130 for_iter: IDENTIFIER '=' • expression
+
+    error       shift, and go to state 134
+    INTEGER     shift, and go to state 135
+    IDENTIFIER  shift, and go to state 136
+    CHARACTER   shift, and go to state 137
+    '-'         shift, and go to state 138
+    '*'         shift, and go to state 139
+    '('         shift, and go to state 140
+    '&'         shift, and go to state 141
+
+    field_access     go to state 142
+    expression       go to state 255
+    call_expression  go to state 144
+
+
+State 251
+
+  122 $@6: ε •
+  123 for_statement: FOR '(' for_init ';' for_cond ';' for_iter ')' • $@6 block
+
+    $default  reduce using rule 122 ($@6)
+
+    $@6  go to state 256
+
+
+State 252
+
+   65 statement_list: ε •
+   66               | • statement_list statement
+  119 case_clause: CASE INTEGER ':' • statement_list
+
+    $default  reduce using rule 65 (statement_list)
+
+    statement_list  go to state 257
+
+
+State 253
+
+   65 statement_list: ε •
+   66               | • statement_list statement
+  121 default_opt: DEFAULT ':' • statement_list
+
+    $default  reduce using rule 65 (statement_list)
+
+    statement_list  go to state 258
+
+
+State 254
+
+  114 switch_statement: SWITCH '(' expression ')' @5 '{' case_list_opt default_opt '}' •
+
+    $default  reduce using rule 114 (switch_statement)
+
+
+State 255
+
+   75 expression: expression • '+' expression
+   76           | expression • '-' expression
+   77           | expression • '*' expression
+   78           | expression • '/' expression
+   80           | expression • EQ expression
+   81           | expression • NE expression
+   82           | expression • LT expression
+   83           | expression • LE expression
+   84           | expression • GT expression
+   85           | expression • GE expression
+  130 for_iter: IDENTIFIER '=' expression •  [')']
+
+    EQ   shift, and go to state 172
+    NE   shift, and go to state 173
+    LT   shift, and go to state 174
+    LE   shift, and go to state 175
+    GT   shift, and go to state 176
+    GE   shift, and go to state 177
+    '+'  shift, and go to state 178
+    '-'  shift, and go to state 179
+    '*'  shift, and go to state 180
+    '/'  shift, and go to state 181
+
+    $default  reduce using rule 130 (for_iter)
+
+
+State 256
+
+   62 block: • '{' declaration_list statement_list '}'
+  123 for_statement: FOR '(' for_init ';' for_cond ';' for_iter ')' $@6 • block
+
+    '{'  shift, and go to state 69
+
+    block  go to state 259
+
+
+State 257
+
+   49 statement: • assignment_statement ';'
+   50          | • input_statement ';'
+   51          | • output_statement ';'
+   52          | • call_statement ';'
+   53          | • return_statement ';'
+   54          | • if_statement
+   55          | • while_statement
+   56          | • for_statement
+   57          | • switch_statement
+   58          | • BREAK ';'
+   59          | • CONTINUE ';'
+   60          | • block
+   61          | • error
+   62 block: • '{' declaration_list statement_list '}'
+   66 statement_list: statement_list • statement
+   67 assignment_statement: • IDENTIFIER '=' expression
+   68                     | • '*' IDENTIFIER '=' expression
+   69                     | • IDENTIFIER index_list '=' expression
+   70                     | • field_access '=' expression
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+  101 input_statement: • INPUT IDENTIFIER
+  102 output_statement: • OUTPUT IDENTIFIER
+  103                 | • OUTPUT TEXT
+  104 return_statement: • RETURN expression
+  105 if_statement: • IF '(' expression ')' block
+  106             | • IF '(' expression ')' block ELSE block
+  108 while_statement: • WHILE '(' expression ')' $@4 block
+  109 call_statement: • IDENTIFIER '(' argument_list ')'
+  114 switch_statement: • SWITCH '(' expression ')' @5 '{' case_list_opt default_opt '}'
+  119 case_clause: CASE INTEGER ':' statement_list •  [CASE, DEFAULT, '}']
+  123 for_statement: • FOR '(' for_init ';' for_cond ';' for_iter ')' $@6 block
+
+    error       shift, and go to state 104
+    IF          shift, and go to state 105
+    WHILE       shift, and go to state 106
+    INPUT       shift, and go to state 107
+    OUTPUT      shift, and go to state 108
+    RETURN      shift, and go to state 109
+    SWITCH      shift, and go to state 110
+    BREAK       shift, and go to state 111
+    FOR         shift, and go to state 112
+    CONTINUE    shift, and go to state 113
+    IDENTIFIER  shift, and go to state 114
+    '*'         shift, and go to state 115
+    '{'         shift, and go to state 69
+
+    CASE     reduce using rule 119 (case_clause)
+    DEFAULT  reduce using rule 119 (case_clause)
+    '}'      reduce using rule 119 (case_clause)
+
+    statement             go to state 117
+    block                 go to state 118
+    assignment_statement  go to state 119
+    field_access          go to state 120
+    input_statement       go to state 121
+    output_statement      go to state 122
+    return_statement      go to state 123
+    if_statement          go to state 124
+    while_statement       go to state 125
+    call_statement        go to state 126
+    switch_statement      go to state 127
+    for_statement         go to state 128
+
+
+State 258
+
+   49 statement: • assignment_statement ';'
+   50          | • input_statement ';'
+   51          | • output_statement ';'
+   52          | • call_statement ';'
+   53          | • return_statement ';'
+   54          | • if_statement
+   55          | • while_statement
+   56          | • for_statement
+   57          | • switch_statement
+   58          | • BREAK ';'
+   59          | • CONTINUE ';'
+   60          | • block
+   61          | • error
+   62 block: • '{' declaration_list statement_list '}'
+   66 statement_list: statement_list • statement
+   67 assignment_statement: • IDENTIFIER '=' expression
+   68                     | • '*' IDENTIFIER '=' expression
+   69                     | • IDENTIFIER index_list '=' expression
+   70                     | • field_access '=' expression
+   71 field_access: • IDENTIFIER DOT IDENTIFIER
+   72             | • IDENTIFIER index_list DOT IDENTIFIER
+   73             | • field_access DOT IDENTIFIER
+   74             | • field_access '[' expression ']'
+  101 input_statement: • INPUT IDENTIFIER
+  102 output_statement: • OUTPUT IDENTIFIER
+  103                 | • OUTPUT TEXT
+  104 return_statement: • RETURN expression
+  105 if_statement: • IF '(' expression ')' block
+  106             | • IF '(' expression ')' block ELSE block
+  108 while_statement: • WHILE '(' expression ')' $@4 block
+  109 call_statement: • IDENTIFIER '(' argument_list ')'
+  114 switch_statement: • SWITCH '(' expression ')' @5 '{' case_list_opt default_opt '}'
+  121 default_opt: DEFAULT ':' statement_list •  ['}']
+  123 for_statement: • FOR '(' for_init ';' for_cond ';' for_iter ')' $@6 block
+
+    error       shift, and go to state 104
+    IF          shift, and go to state 105
+    WHILE       shift, and go to state 106
+    INPUT       shift, and go to state 107
+    OUTPUT      shift, and go to state 108
+    RETURN      shift, and go to state 109
+    SWITCH      shift, and go to state 110
+    BREAK       shift, and go to state 111
+    FOR         shift, and go to state 112
+    CONTINUE    shift, and go to state 113
+    IDENTIFIER  shift, and go to state 114
+    '*'         shift, and go to state 115
+    '{'         shift, and go to state 69
+
+    '}'  reduce using rule 121 (default_opt)
+
+    statement             go to state 117
+    block                 go to state 118
+    assignment_statement  go to state 119
+    field_access          go to state 120
+    input_statement       go to state 121
+    output_statement      go to state 122
+    return_statement      go to state 123
+    if_statement          go to state 124
+    while_statement       go to state 125
+    call_statement        go to state 126
+    switch_statement      go to state 127
+    for_statement         go to state 128
+
+
+State 259
+
+  123 for_statement: FOR '(' for_init ';' for_cond ';' for_iter ')' $@6 block •
+
+    $default  reduce using rule 123 (for_statement)
